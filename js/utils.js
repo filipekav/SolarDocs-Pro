@@ -1,6 +1,58 @@
 /**
  * Funções Utilitárias para o Gerador de Documentos Solar
+ * Inclui captura de dados do formulário, cálculos elétricos,
+ * formatações e algoritmo de compressão inteligente de imagens via Canvas.
  */
+
+/**
+ * Redimensiona e comprime uma imagem (PNG/JPEG/WEBP) no navegador
+ * Converte para JPEG otimizado (~80KB a 140KB) para economizar espaço e garantir fluidez.
+ */
+async function compressImage(file, maxWidth = 1280, maxHeight = 1280, quality = 0.78) {
+    return new Promise((resolve, reject) => {
+        if (!file || !file.type.startsWith('image/')) {
+            return reject(new Error('O arquivo selecionado não é uma imagem válida.'));
+        }
+
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error('Erro ao ler o arquivo de imagem.'));
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onerror = () => reject(new Error('Não foi possível carregar a imagem selecionada.'));
+            img.onload = () => {
+                let width = img.naturalWidth || img.width;
+                let height = img.naturalHeight || img.height;
+
+                // Redimensionamento proporcional se exceder os limites
+                if (width > maxWidth || height > maxHeight) {
+                    if (width / height > maxWidth / maxHeight) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    } else {
+                        width = Math.round((width * maxHeight) / height);
+                        height = maxHeight;
+                    }
+                }
+
+                const canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
+
+                const ctx = canvas.getContext('2d');
+                // Fundo branco sólido para preservar transparências em PNG sem ficar preto
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, width, height);
+                ctx.drawImage(img, 0, 0, width, height);
+
+                // Exporta como JPEG otimizado
+                const base64 = canvas.toDataURL('image/jpeg', quality);
+                resolve(base64);
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    });
+}
 
 function getFormData() {
     const form = document.getElementById('docForm');
@@ -62,18 +114,72 @@ function setFormData(data) {
     elements.forEach(el => {
         const name = el.name;
         if (name && data[name] !== undefined) {
-            el.value = data[name];
+            el.value = data[name] || '';
         }
     });
 
+    // Atualiza os componentes visuais de upload e preview de imagens
+    updateImageUploadPreviews(data);
+
     // Recalcula campos encadeados
     getFormData();
+}
+
+/**
+ * Atualiza os previews dos cards de upload de imagens na aba 'Imagens'
+ */
+function updateImageUploadPreviews(data) {
+    const imageFields = [
+        'logoEmpresa',
+        'imgCroquiLocalizacao',
+        'imgPlantaSituacao',
+        'imgLocalizacaoModulos',
+        'imgDisjuntorPadrao',
+        'imgPlacaSinalizacao',
+        'imgPadraoMedicao'
+    ];
+
+    imageFields.forEach(fieldName => {
+        const card = document.querySelector(`.image-upload-card[data-field="${fieldName}"]`);
+        if (!card) return;
+
+        const val = data ? data[fieldName] : null;
+        const previewImg = card.querySelector('.image-card-preview');
+        const emptyBox = card.querySelector('.image-card-empty');
+        const btnRemove = card.querySelector('.btn-remove-image');
+        const sizeBadge = card.querySelector('.image-size-badge');
+
+        if (val && typeof val === 'string' && val.startsWith('data:image')) {
+            if (previewImg) {
+                previewImg.src = val;
+                previewImg.style.display = 'block';
+            }
+            if (emptyBox) emptyBox.style.display = 'none';
+            if (btnRemove) btnRemove.style.display = 'inline-flex';
+            if (sizeBadge) {
+                const approxKb = Math.round((val.length * 3 / 4) / 1024);
+                sizeBadge.textContent = `~${approxKb} KB (Otimizada)`;
+                sizeBadge.style.display = 'inline-block';
+            }
+            card.classList.add('has-image');
+        } else {
+            if (previewImg) {
+                previewImg.src = '';
+                previewImg.style.display = 'none';
+            }
+            if (emptyBox) emptyBox.style.display = 'flex';
+            if (btnRemove) btnRemove.style.display = 'none';
+            if (sizeBadge) sizeBadge.style.display = 'none';
+            card.classList.remove('has-image');
+        }
+    });
 }
 
 function clearFormData() {
     const form = document.getElementById('docForm');
     if (!form) return;
     form.reset();
+    updateImageUploadPreviews({});
 }
 
 function formatDateBR(dateStr) {
@@ -110,6 +216,10 @@ function renderDocument(html) {
     const container = document.getElementById('previewContainer');
     if (container) {
         container.innerHTML = html;
+        // Reinicializa eventos interativos nos placeholders de imagem após renderizar
+        if (typeof attachMemorialImageEvents === 'function') {
+            attachMemorialImageEvents();
+        }
     }
 }
 

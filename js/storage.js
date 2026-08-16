@@ -1,9 +1,15 @@
 /**
- * Gerenciador de Persistência Local (LocalStorage) para Projetos Solares
+ * Gerenciador de Persistência Avançado para Projetos Solares
+ * Suporta IndexedDB com alta capacidade de armazenamento (imagens e anexos)
+ * e mantém cache em memória com sincronização síncrona/assíncrona e fallback para LocalStorage.
  */
 
 const STORAGE_KEY_PROJECTS = 'solar_projects_v1';
 const STORAGE_KEY_ACTIVE = 'solar_active_project_id';
+const DB_NAME = 'SolarDocsDB';
+const DB_VERSION = 1;
+const STORE_PROJECTS = 'projects';
+const STORE_META = 'meta';
 
 const DEFAULT_PROJECT_TEMPLATE = {
     clienteNome: "MARIA MYKAELLE FREITAS ALMEIDA",
@@ -89,32 +95,192 @@ const DEFAULT_PROJECT_TEMPLATE = {
     tecnicoCpf: "104.152.573-79",
     tecnicoRegistro: "2605536652",
     dataProjeto: new Date().toISOString().split('T')[0],
-    cidadeDoc: "Pacajus - CE"
+    cidadeDoc: "Pacajus - CE",
+    // Campos de Imagens & Anexos (Base64 Otimizado)
+    logoEmpresa: null,
+    imgCroquiLocalizacao: null,
+    imgPlantaSituacao: null,
+    imgLocalizacaoModulos: null,
+    imgDisjuntorPadrao: null,
+    imgPlacaSinalizacao: null,
+    imgPadraoMedicao: null
 };
 
-const ProjectStorage = {
-    /**
-     * Retorna a lista de todos os projetos ordenados por data de atualização (mais recente primeiro)
-     */
-    getAll() {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY_PROJECTS);
-            if (!raw) {
-                return this.initDefault();
-            }
-            const list = JSON.parse(raw);
-            if (!Array.isArray(list) || list.length === 0) {
-                return this.initDefault();
-            }
-            return list.sort((a, b) => new Date(b.atualizadoEm || 0) - new Date(a.atualizadoEm || 0));
-        } catch (e) {
-            console.error('Erro ao ler projetos do localStorage:', e);
-            return this.initDefault();
+// =========================================================================
+// CAMADA INDEXEDDB NATIVA
+// =========================================================================
+
+const IDBAdapter = {
+    _dbPromise: null,
+
+    getDB() {
+        if (!this._dbPromise) {
+            this._dbPromise = new Promise((resolve, reject) => {
+                if (!window.indexedDB) {
+                    console.warn('IndexedDB não suportado. Usando LocalStorage fallback.');
+                    return resolve(null);
+                }
+
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+                    if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
+                        db.createObjectStore(STORE_PROJECTS, { keyPath: 'id' });
+                    }
+                    if (!db.objectStoreNames.contains(STORE_META)) {
+                        db.createObjectStore(STORE_META, { keyPath: 'key' });
+                    }
+                };
+
+                request.onsuccess = (event) => resolve(event.target.result);
+                request.onerror = (event) => {
+                    console.error('Erro ao abrir IndexedDB:', event.target.error);
+                    resolve(null);
+                };
+            });
         }
+        return this._dbPromise;
+    },
+
+    async getAllProjects() {
+        const db = await this.getDB();
+        if (!db) return null;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction(STORE_PROJECTS, 'readonly');
+                const store = tx.objectStore(STORE_PROJECTS);
+                const req = store.getAll();
+                req.onsuccess = () => resolve(req.result || []);
+                req.onerror = () => resolve(null);
+            } catch (e) {
+                console.error('Erro getAllProjects IDB:', e);
+                resolve(null);
+            }
+        });
+    },
+
+    async saveProject(project) {
+        const db = await this.getDB();
+        if (!db) return false;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction(STORE_PROJECTS, 'readwrite');
+                const store = tx.objectStore(STORE_PROJECTS);
+                const req = store.put(project);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => resolve(false);
+            } catch (e) {
+                console.error('Erro saveProject IDB:', e);
+                resolve(false);
+            }
+        });
+    },
+
+    async deleteProject(id) {
+        const db = await this.getDB();
+        if (!db) return false;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction(STORE_PROJECTS, 'readwrite');
+                const store = tx.objectStore(STORE_PROJECTS);
+                const req = store.delete(id);
+                req.onsuccess = () => resolve(true);
+                req.onerror = () => resolve(false);
+            } catch (e) {
+                console.error('Erro deleteProject IDB:', e);
+                resolve(false);
+            }
+        });
+    },
+
+    async bulkSave(projectsList) {
+        const db = await this.getDB();
+        if (!db || !Array.isArray(projectsList)) return false;
+        return new Promise((resolve) => {
+            try {
+                const tx = db.transaction(STORE_PROJECTS, 'readwrite');
+                const store = tx.objectStore(STORE_PROJECTS);
+                projectsList.forEach(p => store.put(p));
+                tx.oncomplete = () => resolve(true);
+                tx.onerror = () => resolve(false);
+            } catch (e) {
+                console.error('Erro bulkSave IDB:', e);
+                resolve(false);
+            }
+        });
+    }
+};
+
+// =========================================================================
+// CONTROLADOR PRINCIPAL PROJECTSTORAGE
+// =========================================================================
+
+const ProjectStorage = {
+    _cache: [],
+    _initialized: false,
+
+    /**
+     * Inicializa o armazenamento lendo do IndexedDB e migrando do LocalStorage se necessário
+     */
+    async init() {
+        if (this._initialized) return this._cache;
+
+        // 1. Tenta carregar do IndexedDB
+        const idbProjects = await IDBAdapter.getAllProjects();
+
+        if (idbProjects && idbProjects.length > 0) {
+            this._cache = idbProjects.sort((a, b) => new Date(b.atualizadoEm || 0) - new Date(a.atualizadoEm || 0));
+        } else {
+            // 2. Se IndexedDB vazio, verifica se tem projetos legados no localStorage para migrar
+            let legacyList = null;
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_PROJECTS);
+                if (raw) legacyList = JSON.parse(raw);
+            } catch (e) {
+                legacyList = null;
+            }
+
+            if (Array.isArray(legacyList) && legacyList.length > 0) {
+                this._cache = legacyList;
+                // Migra para o IndexedDB em segundo plano
+                await IDBAdapter.bulkSave(legacyList);
+            } else {
+                // 3. Inicializa com o projeto modelo padrão
+                this._cache = this.initDefault();
+            }
+        }
+
+        this._initialized = true;
+        this._syncLocalStorageFallback();
+        return this._cache;
     },
 
     /**
-     * Inicializa com um projeto de demonstração caso esteja vazio
+     * Retorna a lista de todos os projetos (ordenados por data de atualização)
+     */
+    getAll() {
+        if (!this._initialized) {
+            // Leitura síncrona emergencial caso chamado antes do init()
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY_PROJECTS);
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed) && parsed.length > 0) {
+                        this._cache = parsed;
+                    }
+                }
+            } catch (e) { }
+
+            if (this._cache.length === 0) {
+                this._cache = this.initDefault();
+            }
+        }
+        return [...this._cache].sort((a, b) => new Date(b.atualizadoEm || 0) - new Date(a.atualizadoEm || 0));
+    },
+
+    /**
+     * Cria o projeto de demonstração padrão
      */
     initDefault() {
         const defaultProject = {
@@ -125,7 +291,9 @@ const ProjectStorage = {
             data: { ...DEFAULT_PROJECT_TEMPLATE }
         };
         const list = [defaultProject];
-        localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(list));
+        this._cache = list;
+        IDBAdapter.bulkSave(list);
+        this._syncLocalStorageFallback();
         return list;
     },
 
@@ -133,6 +301,7 @@ const ProjectStorage = {
      * Retorna um projeto por ID
      */
     getById(id) {
+        if (!id) return null;
         const list = this.getAll();
         return list.find(p => p.id === id) || null;
     },
@@ -141,30 +310,46 @@ const ProjectStorage = {
      * Salva ou atualiza um projeto
      */
     save(project) {
+        if (!project || !project.id) return null;
+
         const list = this.getAll();
         const now = new Date().toISOString();
         const index = list.findIndex(p => p.id === project.id);
+
+        let savedProj = null;
 
         if (index >= 0) {
             list[index] = {
                 ...list[index],
                 ...project,
+                data: {
+                    ...list[index].data,
+                    ...(project.data || {})
+                },
                 atualizadoEm: now
             };
+            savedProj = list[index];
         } else {
             const newProj = {
-                id: project.id || ('proj_' + Date.now()),
+                id: project.id,
                 nome: project.nome || 'Novo Projeto Solar',
                 criadoEm: project.criadoEm || now,
                 atualizadoEm: now,
-                data: project.data || { ...DEFAULT_PROJECT_TEMPLATE }
+                data: { ...DEFAULT_PROJECT_TEMPLATE, ...(project.data || {}) }
             };
             list.unshift(newProj);
-            project = newProj;
+            savedProj = newProj;
         }
 
-        localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(list));
-        return project;
+        this._cache = list;
+
+        // Persiste assincronamente no IndexedDB
+        IDBAdapter.saveProject(savedProj);
+
+        // Atualiza fallback LocalStorage
+        this._syncLocalStorageFallback();
+
+        return savedProj;
     },
 
     /**
@@ -172,8 +357,8 @@ const ProjectStorage = {
      */
     create(nome, customData = null) {
         const now = new Date().toISOString();
-        const data = customData ? { ...customData } : { ...DEFAULT_PROJECT_TEMPLATE };
-        
+        const data = customData ? { ...DEFAULT_PROJECT_TEMPLATE, ...customData } : { ...DEFAULT_PROJECT_TEMPLATE };
+
         if (!customData) {
             data.clienteNome = "";
             data.clienteCpf = "";
@@ -186,6 +371,13 @@ const ProjectStorage = {
             data.cep = "";
             data.uc = "";
             data.dataProjeto = now.split('T')[0];
+            data.logoEmpresa = null;
+            data.imgCroquiLocalizacao = null;
+            data.imgPlantaSituacao = null;
+            data.imgLocalizacaoModulos = null;
+            data.imgDisjuntorPadrao = null;
+            data.imgPlacaSinalizacao = null;
+            data.imgPadraoMedicao = null;
         }
 
         const newProject = {
@@ -198,8 +390,12 @@ const ProjectStorage = {
 
         const list = this.getAll();
         list.unshift(newProject);
-        localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(list));
+        this._cache = list;
+
+        IDBAdapter.saveProject(newProject);
         this.setActiveId(newProject.id);
+        this._syncLocalStorageFallback();
+
         return newProject;
     },
 
@@ -221,7 +417,10 @@ const ProjectStorage = {
 
         const list = this.getAll();
         list.unshift(copy);
-        localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(list));
+        this._cache = list;
+
+        IDBAdapter.saveProject(copy);
+        this._syncLocalStorageFallback();
         return copy;
     },
 
@@ -231,16 +430,20 @@ const ProjectStorage = {
     delete(id) {
         let list = this.getAll();
         list = list.filter(p => p.id !== id);
-        localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(list));
-        
+        this._cache = list;
+
+        IDBAdapter.deleteProject(id);
+
         if (this.getActiveId() === id) {
-            localStorage.removeItem(STORAGE_KEY_ACTIVE);
+            this.setActiveId(list.length > 0 ? list[0].id : null);
         }
+
+        this._syncLocalStorageFallback();
         return true;
     },
 
     /**
-     * ID do projeto atualmente ativo
+     * ID do projeto ativo
      */
     getActiveId() {
         return localStorage.getItem(STORAGE_KEY_ACTIVE);
@@ -255,7 +458,7 @@ const ProjectStorage = {
     },
 
     /**
-     * Exporta um único projeto como arquivo JSON
+     * Exporta um único projeto como arquivo JSON (incluindo imagens)
      */
     exportProjectJSON(id) {
         const project = this.getById(id);
@@ -266,15 +469,15 @@ const ProjectStorage = {
     },
 
     /**
-     * Exporta todos os projetos como um arquivo de backup completo
+     * Exporta todos os projetos como backup completo
      */
     exportAllBackup() {
         const list = this.getAll();
         const dateStr = new Date().toISOString().split('T')[0];
         const filename = `backup_projetos_solar_${dateStr}.json`;
         const payload = {
-            app: 'GeradorDocsSolar',
-            version: '1.0',
+            app: 'SolarDocsPro',
+            version: '2.0',
             exportadoEm: new Date().toISOString(),
             totalProjetos: list.length,
             projetos: list
@@ -284,35 +487,32 @@ const ProjectStorage = {
     },
 
     /**
-     * Importa projetos a partir de um arquivo/string JSON
+     * Importa projetos a partir de JSON (suporta imagens)
      */
-    importFromJSON(jsonString) {
+    async importFromJSON(jsonString) {
         try {
             const parsed = JSON.parse(jsonString);
             const now = new Date().toISOString();
             let importedCount = 0;
             const list = this.getAll();
 
-            // Caso seja um backup completo com array em `projetos`
             let itemsToImport = [];
             if (parsed && Array.isArray(parsed.projetos)) {
                 itemsToImport = parsed.projetos;
             } else if (Array.isArray(parsed)) {
                 itemsToImport = parsed;
             } else if (parsed && typeof parsed === 'object') {
-                // Projeto individual
                 itemsToImport = [parsed];
             }
 
-            itemsToImport.forEach(item => {
-                if (!item || (!item.data && !item.clienteNome)) return;
+            for (const item of itemsToImport) {
+                if (!item || (!item.data && !item.clienteNome)) continue;
 
-                // Normaliza formato
-                const projectData = item.data ? item.data : item;
+                const projectData = item.data ? { ...DEFAULT_PROJECT_TEMPLATE, ...item.data } : { ...DEFAULT_PROJECT_TEMPLATE, ...item };
                 const projName = item.nome || (projectData.clienteNome ? `Projeto - ${projectData.clienteNome}` : 'Projeto Importado');
-                
+
                 const newProject = {
-                    id: 'proj_' + Date.now() + '_' + Math.floor(Math.random() * 1000),
+                    id: 'proj_' + Date.now() + '_' + Math.floor(Math.random() * 10000),
                     nome: projName,
                     criadoEm: item.criadoEm || now,
                     atualizadoEm: now,
@@ -320,11 +520,13 @@ const ProjectStorage = {
                 };
 
                 list.unshift(newProject);
+                await IDBAdapter.saveProject(newProject);
                 importedCount++;
-            });
+            }
 
             if (importedCount > 0) {
-                localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(list));
+                this._cache = list;
+                this._syncLocalStorageFallback();
                 return { success: true, count: importedCount };
             } else {
                 return { success: false, message: 'Nenhum projeto válido encontrado no arquivo JSON.' };
@@ -336,7 +538,34 @@ const ProjectStorage = {
     },
 
     /**
-     * Helper para disparar download do Blob no navegador
+     * Sincroniza uma versão leve/segura com o LocalStorage como fallback
+     */
+    _syncLocalStorageFallback() {
+        try {
+            localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(this._cache));
+        } catch (e) {
+            // Se exceder a cota do LocalStorage por causa das fotos Base64, salva versão sem imagens no localStorage
+            try {
+                const lightweight = this._cache.map(p => {
+                    const cleanData = { ...p.data };
+                    cleanData.logoEmpresa = null;
+                    cleanData.imgCroquiLocalizacao = null;
+                    cleanData.imgPlantaSituacao = null;
+                    cleanData.imgLocalizacaoModulos = null;
+                    cleanData.imgDisjuntorPadrao = null;
+                    cleanData.imgPlacaSinalizacao = null;
+                    cleanData.imgPadraoMedicao = null;
+                    return { ...p, data: cleanData };
+                });
+                localStorage.setItem(STORAGE_KEY_PROJECTS, JSON.stringify(lightweight));
+            } catch (err) {
+                console.warn('LocalStorage sem espaço livre. Dados mantidos com segurança no IndexedDB.');
+            }
+        }
+    },
+
+    /**
+     * Helper para download de Blob
      */
     downloadBlob(blob, filename) {
         const url = URL.createObjectURL(blob);
@@ -349,3 +578,8 @@ const ProjectStorage = {
         URL.revokeObjectURL(url);
     }
 };
+
+// Inicialização imediata assíncrona
+if (typeof window !== 'undefined') {
+    ProjectStorage.init();
+}

@@ -285,6 +285,159 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // =========================================================================
+    // UPLOAD, COMPRESSÃO E GESTÃO DE IMAGENS DO MEMORIAL
+    // =========================================================================
+
+    let currentUploadTargetField = null;
+    const globalImageFileInput = document.getElementById('globalImageFileInput');
+
+    function openImagePickerForField(fieldName) {
+        currentUploadTargetField = fieldName;
+        if (globalImageFileInput) {
+            globalImageFileInput.value = '';
+            globalImageFileInput.click();
+        }
+    }
+
+    async function processAndSaveImage(file, fieldName) {
+        if (!file || !fieldName) return;
+
+        try {
+            showToast('Otimizando imagem no navegador...', 'info');
+            const compressedBase64 = await compressImage(file, 1280, 1280, 0.78);
+
+            const input = document.getElementById(`input_${fieldName}`) || document.querySelector(`input[name="${fieldName}"]`);
+            if (input) {
+                input.value = compressedBase64;
+            }
+
+            // Atualiza preview no card da aba Imagens
+            const currentData = getFormData();
+            currentData[fieldName] = compressedBase64;
+            updateImageUploadPreviews(currentData);
+
+            // Dispara salvamento no IndexedDB e atualização do documento
+            handleFormChange();
+            showToast('Imagem otimizada e salva com sucesso!', 'success');
+        } catch (err) {
+            console.error('Erro ao processar imagem:', err);
+            showToast(err.message || 'Erro ao carregar a imagem.', 'error');
+        }
+    }
+
+    function removeImageField(fieldName) {
+        if (!fieldName) return;
+        const input = document.getElementById(`input_${fieldName}`) || document.querySelector(`input[name="${fieldName}"]`);
+        if (input) {
+            input.value = '';
+        }
+
+        const currentData = getFormData();
+        currentData[fieldName] = null;
+        updateImageUploadPreviews(currentData);
+
+        handleFormChange();
+        showToast('Imagem removida.', 'info');
+    }
+
+    if (globalImageFileInput) {
+        globalImageFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files && e.target.files[0];
+            if (file && currentUploadTargetField) {
+                await processAndSaveImage(file, currentUploadTargetField);
+            }
+        });
+    }
+
+    function setupImageUploadHandlers() {
+        // Selecionar foto pelo botão da aba
+        document.querySelectorAll('.image-upload-card .btn-select-image').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.image-upload-card');
+                const fieldName = card ? card.dataset.field : null;
+                if (fieldName) openImagePickerForField(fieldName);
+            });
+        });
+
+        // Remover foto pelo botão da aba
+        document.querySelectorAll('.image-upload-card .btn-remove-image').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const card = btn.closest('.image-upload-card');
+                const fieldName = card ? card.dataset.field : null;
+                if (fieldName) removeImageField(fieldName);
+            });
+        });
+
+        // Clique na área de dropzone da aba
+        document.querySelectorAll('.image-upload-card .image-card-dropzone').forEach(dropzone => {
+            const card = dropzone.closest('.image-upload-card');
+            const fieldName = card ? card.dataset.field : null;
+
+            dropzone.addEventListener('click', () => {
+                if (fieldName) openImagePickerForField(fieldName);
+            });
+
+            dropzone.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                dropzone.classList.add('drag-over');
+            });
+
+            dropzone.addEventListener('dragleave', () => {
+                dropzone.classList.remove('drag-over');
+            });
+
+            dropzone.addEventListener('drop', async (e) => {
+                e.preventDefault();
+                dropzone.classList.remove('drag-over');
+                const file = e.dataTransfer.files && e.dataTransfer.files[0];
+                if (file && fieldName) {
+                    await processAndSaveImage(file, fieldName);
+                }
+            });
+        });
+    }
+
+    // Liga eventos interativos diretamente no corpo do Memorial Descritivo
+    window.attachMemorialImageEvents = function () {
+        const wrappers = document.querySelectorAll('.memorial-img-wrapper');
+        wrappers.forEach(wrapper => {
+            const fieldName = wrapper.dataset.field;
+            if (!fieldName) return;
+
+            // Clique no placeholder ou imagem
+            wrapper.onclick = (e) => {
+                if (e.target.closest('.btn-remove-img')) {
+                    e.stopPropagation();
+                    removeImageField(fieldName);
+                    return;
+                }
+                openImagePickerForField(fieldName);
+            };
+
+            // Drag and drop direto sobre o placeholder do Memorial
+            wrapper.ondragover = (e) => {
+                e.preventDefault();
+                wrapper.classList.add('drag-over-memorial');
+            };
+
+            wrapper.ondragleave = () => {
+                wrapper.classList.remove('drag-over-memorial');
+            };
+
+            wrapper.ondrop = async (e) => {
+                e.preventDefault();
+                wrapper.classList.remove('drag-over-memorial');
+                const file = e.dataTransfer.files && e.dataTransfer.files[0];
+                if (file) {
+                    await processAndSaveImage(file, fieldName);
+                }
+            };
+        });
+    };
+
+    // =========================================================================
     // CONTROLE DE PRÉ-VISUALIZAÇÃO E DOCUMENTOS
     // =========================================================================
 
@@ -808,7 +961,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicialização da Aplicação
     setupTabs();
+    setupImageUploadHandlers();
     
+    // Inicializa o armazenamento IndexedDB e atualiza a interface
+    if (typeof ProjectStorage.init === 'function') {
+        ProjectStorage.init().then(() => {
+            renderDashboard();
+            if (activeProjectId) {
+                const proj = ProjectStorage.getById(activeProjectId);
+                if (proj) updateImageUploadPreviews(proj.data);
+            }
+        });
+    }
+
     // Inicia no Dashboard de Projetos
     switchView('dashboard');
 });

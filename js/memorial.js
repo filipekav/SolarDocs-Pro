@@ -11,12 +11,12 @@ function formatDateExtenso(dateStr) {
     return dateStr;
 }
 
-function getHeaderHtml(pageNum) {
+function getHeaderHtml(pageNum, d) {
     if (pageNum === 1) return '';
-    const logoSrc = (typeof ASSETS !== 'undefined' && ASSETS.LOGO_JPEG) ? ASSETS.LOGO_JPEG : 'logo.jpeg';
+    const logoSrc = (d && d.logoEmpresa) ? d.logoEmpresa : ((typeof ASSETS !== 'undefined' && ASSETS.LOGO_JPEG) ? ASSETS.LOGO_JPEG : 'logo.jpeg');
     return `
         <div class="memorial-header">
-            <img src="${logoSrc}" alt="Nova Energy" class="memorial-header-logo">
+            <img src="${logoSrc}" alt="Logo Empresa" class="memorial-header-logo">
         </div>
     `;
 }
@@ -25,6 +25,36 @@ function getFooterHtml(pageNum) {
     return `
         <div class="memorial-footer">
             <span class="page-number">${pageNum}</span>
+        </div>
+    `;
+}
+
+/**
+ * Renderiza uma imagem customizada ou um placeholder interativo para o Memorial Descritivo
+ */
+function renderMemorialImage(fieldName, imgData, placeholderText, heightPx, icon = '📷') {
+    if (imgData && typeof imgData === 'string' && imgData.startsWith('data:image')) {
+        return `
+            <div class="memorial-img-wrapper has-image" data-field="${fieldName}">
+                <div class="img-preview-frame" style="max-height: ${heightPx}px;">
+                    <img src="${imgData}" alt="${placeholderText}" class="memorial-custom-img" style="max-height: ${heightPx}px;">
+                    <div class="img-hover-overlay">
+                        <span class="overlay-text">🔄 Clique para alterar ou remover</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    return `
+        <div class="memorial-img-wrapper is-empty" data-field="${fieldName}" title="Clique ou arraste uma imagem para cá">
+            <div class="img-placeholder interactive-dropzone" style="height: ${heightPx}px;">
+                <div class="placeholder-content">
+                    <span class="placeholder-icon">${icon}</span>
+                    <span class="placeholder-text">[ ${placeholderText} ]</span>
+                    <span class="placeholder-hint">📁 Clique para carregar ou arraste uma foto</span>
+                </div>
+            </div>
         </div>
     `;
 }
@@ -135,6 +165,7 @@ function gerarMemorialDescritivo(data) {
     const dataExtenso = formatDateExtenso(d.dataProjeto);
     const clienteNome = (d.clienteNome || '').toUpperCase();
     const potenciaSistema = d.potenciaSistema || '';
+    const capaLogoSrc = d.logoEmpresa || ((typeof ASSETS !== 'undefined' && ASSETS.LOGO_JPEG) ? ASSETS.LOGO_JPEG : 'logo.jpeg');
 
     // Cálculos de Potência
     const potenciaModWp = Number(d.moduloPotencia) || 0;
@@ -156,11 +187,11 @@ function gerarMemorialDescritivo(data) {
         <div class="memorial-document">
             <!-- PÁGINA 1: CAPA -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(1)}
+                ${getHeaderHtml(1, d)}
                 <div class="capa-content">
-                    <div class="capa-logo-container">
-                        <img src="${(typeof ASSETS !== 'undefined' && ASSETS.LOGO_JPEG) ? ASSETS.LOGO_JPEG : 'logo.jpeg'}" alt="Nova Energy LTDA" class="capa-logo">
-                        <div class="capa-empresa-sub">Nova Energy LTDA</div>
+                    <div class="capa-logo-container memorial-img-wrapper" data-field="logoEmpresa" title="Clique ou arraste para alterar o logo da empresa">
+                        <img src="${capaLogoSrc}" alt="${d.empresaNome || 'Nova Energy'}" class="capa-logo">
+                        <div class="capa-empresa-sub">${d.empresaNome || 'Nova Energy LTDA'}</div>
                     </div>
 
                     <div class="capa-titulo">
@@ -176,7 +207,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 2: SUMÁRIO -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(2)}
+                ${getHeaderHtml(2, d)}
                 <div class="memorial-body">
                     <h1 class="sumario-title">SUMÁRIO</h1>
                     
@@ -208,7 +239,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 3: SEÇÕES 1 E 2 + FIGURA 01 -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(3)}
+                ${getHeaderHtml(3, d)}
                 <div class="memorial-body">
                     <h2>1. OBJETIVOS:</h2>
                     <p>Revisão da instalação de uma usina solar fotovoltaica conectada à <u>rede ${(d.tipoConexao || 'monofasica').toLowerCase()}</u> de BT da ENEL – CE de <u>${potenciaSistema || '___'} kW</u> de potência instalada. Projeto revisado pelo tecnico <u>${d.tecnicoNome || '___'}</u>, com Registro Nacional: (CFT/CRT): <u>${d.tecnicoCpf || '___'}</u>, Número do TRT:<u>${d.tecnicoRegistro || '___'}</u> , para a empresa <u>${d.empresaNome || 'Nova Energy Ltda'}</u>, CNPJ:<u>${d.empresaCnpj || '___'}</u> situada na <u>${d.empresaEndereco || '___'}</u>.</p>
@@ -230,9 +261,7 @@ function gerarMemorialDescritivo(data) {
 
                     <p>A figura 01, ilustra a localização do empreendimento, em destaque, em relação a sua vizinhança:</p>
 
-                    <div class="img-placeholder" style="height:480px;">
-                        <span class="placeholder-text">[ Imagem de Satélite / Croquis de Localização ]</span>
-                    </div>
+                    ${renderMemorialImage('imgCroquiLocalizacao', d.imgCroquiLocalizacao, 'Figura 01: Imagem de Satélite / Croquis de Localização', 450, '🛰️')}
                     <div class="figure-caption">Figura 01 – Croquis de localização do empreendimento.</div>
                 </div>
                 ${getFooterHtml(3)}
@@ -240,25 +269,19 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 4: FIGURAS 02, 03 E 04 -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(4)}
+                ${getHeaderHtml(4, d)}
                 <div class="memorial-body">
                     <p>Já a figura 02, ilustra a planta de situação com o arruamento e a figura 03, ilustra em detalhes a localização das placas, localização do(s) inversor(es) e o ponto de entrega.</p>
 
-                    <div class="img-placeholder" style="height:240px;">
-                        <span class="placeholder-text">[ Planta de Situação com Arruamento ]</span>
-                    </div>
+                    ${renderMemorialImage('imgPlantaSituacao', d.imgPlantaSituacao, 'Figura 02: Planta de Situação com Arruamento', 230, '🗺️')}
                     <div class="figure-caption">Figura 02 – Planta de situação do empreendimento.</div>
 
-                    <div class="img-placeholder" style="height:240px;">
-                        <span class="placeholder-text">[ Detalhes da Localização dos Módulos, Inversores e Ponto de Entrega ]</span>
-                    </div>
+                    ${renderMemorialImage('imgLocalizacaoModulos', d.imgLocalizacaoModulos, 'Figura 03: Detalhes da Localização dos Módulos, Inversores e Ponto de Entrega', 230, '🏠')}
                     <div class="figure-caption">Figura 03 – Detalhes da localização dos módulos, inversores e do ponto de entrega do empreendimento.</div>
 
                     <p>A figura 04 mostra o disjuntor do padrão de entrada, que no caso é um de <u>${d.disjuntorEntrada || '32'}A ${(d.tipoConexao || 'monofasico').toLowerCase()}</u>.</p>
 
-                    <div class="img-placeholder" style="height:240px;">
-                        <span class="placeholder-text">[ Fotos do Disjuntor do Padrão ]</span>
-                    </div>
+                    ${renderMemorialImage('imgDisjuntorPadrao', d.imgDisjuntorPadrao, 'Figura 04: Fotos do Disjuntor do Padrão do Cliente', 230, '⚡')}
                     <div class="figure-caption">Figura 04 – Disjuntor do padrão do cliente.</div>
                 </div>
                 ${getFooterHtml(4)}
@@ -266,7 +289,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 5: AUTOCONSUMO REMOTO & NORMAS TÉCNICAS -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(5)}
+                ${getHeaderHtml(5, d)}
                 <div class="memorial-body">
                     <p>A divisão do excedente será descrito na tabela 2.</p>
 
@@ -314,7 +337,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 6: MÓDULOS FOTOVOLTAICOS & INVERSOR -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(6)}
+                ${getHeaderHtml(6, d)}
                 <div class="memorial-body">
                     <h3>3.1. Módulos fotovoltaicos:</h3>
                     <p>As principais características dos módulos fotovoltaicos adquiridos pelo cliente são descritas na tabela 3 e o datasheet do mesmo está anexado no tópico 4 (ANEXOS).</p>
@@ -359,7 +382,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 7: GRÁFICO 1 & ESTRUTURA DE FIXAÇÃO -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(7)}
+                ${getHeaderHtml(7, d)}
                 <div class="memorial-body">
                     <h3>3.3. Gráfico da previsão de rendimento mensal do sistema solar:</h3>
                     <p>O gráfico 1 descreve a previsão da produção de energia mensal do sistema instalado no cliente.</p>
@@ -381,7 +404,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 8: DISPOSITIVOS DE PROTEÇÃO & ATERRAMENTO -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(8)}
+                ${getHeaderHtml(8, d)}
                 <div class="memorial-body">
                     <h3>3.5. Dispositivos de proteção:</h3>
                     <p>O conjunto de geração e conexão está dotado de proteção integrada contemplando:</p>
@@ -428,7 +451,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 9: FÓRMULAS E EQUAÇÕES DE CONDUTORES -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(9)}
+                ${getHeaderHtml(9, d)}
                 <div class="memorial-body">
                     <p>com hastes de aço cobreado de 15 mm de diâmetro e comprimento mínimo de 2000 mm, de acordo com a tabela 4 da CNC-OMBR-MAT-18-0124-EDCE.</p>
 
@@ -485,7 +508,7 @@ function gerarMemorialDescritivo(data) {
 
             <!-- PÁGINA 10: TABELA 6 & SINALIZAÇÃO -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(10)}
+                ${getHeaderHtml(10, d)}
                 <div class="memorial-body">
                     <p>A tabela 6 descreve as características dos condutores utilizados na instalação da usina, os quais foram selecionados de acordo com a tabela C-3 da ABNT NBR 16612:2020 e a tabela 33 da ABNT NBR 5410:2013.</p>
 
@@ -551,31 +574,28 @@ function gerarMemorialDescritivo(data) {
                         <li>− Na chapa deverá ser aplicada uma demão de fundo anti-corrosivo de espessura mínima de 30 μm (frente e fundo).</li>
                     </ul>
 
-                    ${gerarPlacaSinalizacaoSVG()}
+                    ${d.imgPlacaSinalizacao ? renderMemorialImage('imgPlacaSinalizacao', d.imgPlacaSinalizacao, 'Figura 05: Foto da Placa de Sinalização', 200, '🪧') : gerarPlacaSinalizacaoSVG()}
                 </div>
                 ${getFooterHtml(10)}
             </div>
 
             <!-- PÁGINA 11: FIGURAS 5 E 6 DE SINALIZAÇÃO -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(11)}
+                ${getHeaderHtml(11, d)}
                 <div class="memorial-body">
                     <div class="figure-caption" style="margin-top:10px;">Figura 5 – Modelo da placa de sinalização de geração própria.</div>
 
-                    <div class="img-placeholder" style="height:240px;">
-                        <span class="placeholder-text">[ Modelo da placa de sinalização de geração própria. ]</span>
-                    </div>
+                    ${renderMemorialImage('imgPlacaSinalizacao', d.imgPlacaSinalizacao, 'Modelo da placa de sinalização de geração própria', 240, '🪧')}
                     <div class="figure-caption">Figura 6 – Desenho 03: Padrão de medição de baixa tensão.</div>
-                    <div class="img-placeholder" style="height:240px;">
-                        <span class="placeholder-text">[ Padrão de Medição de Baixa Tensão ]</span>
-                    </div>
+
+                    ${renderMemorialImage('imgPadraoMedicao', d.imgPadraoMedicao, 'Padrão de Medição de Baixa Tensão', 240, '📐')}
                 </div>
                 ${getFooterHtml(11)}
             </div>
 
             <!-- PÁGINA 12: ANEXOS -->
             <div class="doc-page memorial-page">
-                ${getHeaderHtml(12)}
+                ${getHeaderHtml(12, d)}
                 <div class="memorial-body">
                     <h2>4. ANEXOS:</h2>
                     <ul class="anexos-list">

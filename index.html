@@ -133,6 +133,7 @@
                     <button class="tab-btn active" data-tab="cliente">Cliente / UC</button>
                     <button class="tab-btn" data-tab="sistema">Sistema / Painéis</button>
                     <button class="tab-btn" data-tab="empresa">Empresa / Técnico</button>
+                    <button class="tab-btn" data-tab="imagens">📷 Imagens / Memorial</button>
                 </div>
 
                 <form id="docForm">
@@ -293,7 +294,181 @@
                             <label class="full-width">Data do Projeto <input type="date" name="dataProjeto" value="2026-07-20"></label>
                         </div>
                     </div>
+
+                    <!-- Aba Imagens do Memorial -->
+                    <div class="tab-content" id="imagens">
+                        <h2>Imagens e Figuras do Memorial Descritivo</h2>
+                        <p class="tab-intro-text">Faça o upload das fotos reais do projeto. Todas as imagens são redimensionadas e comprimidas automaticamente via <strong>IndexedDB</strong>, garantindo máxima nitidez sem pesar.</p>
+
+                        <!-- Campos ocultos de persistência -->
+                        <input type="hidden" name="logoEmpresa" id="input_logoEmpresa">
+                        <input type="hidden" name="imgCroquiLocalizacao" id="input_imgCroquiLocalizacao">
+                        <input type="hidden" name="imgPlantaSituacao" id="input_imgPlantaSituacao">
+                        <input type="hidden" name="imgLocalizacaoModulos" id="input_imgLocalizacaoModulos">
+                        <input type="hidden" name="imgDisjuntorPadrao" id="input_imgDisjuntorPadrao">
+                        <input type="hidden" name="imgPlacaSinalizacao" id="input_imgPlacaSinalizacao">
+                        <input type="hidden" name="imgPadraoMedicao" id="input_imgPadraoMedicao">
+
+                        <div class="image-upload-grid">
+                            <!-- Logo da Empresa -->
+                            <div class="image-upload-card" data-field="logoEmpresa">
+                                <div class="image-card-header">
+                                    <div class="image-card-title">
+                                        <span class="image-card-icon">🏢</span>
+                                        <strong>Logotipo da Empresa</strong>
+                                    </div>
+                                    <span class="image-size-badge" style="display: none;"></span>
+                                </div>
+                                <p class="image-card-desc">Substitui o logo padrão nos carimbos das 6 pranchas e na capa do memorial.</p>
+                                <div class="image-card-dropzone">
+                                    <img class="image-card-preview" src="" alt="Logo Preview" style="display: none;">
+                                    <div class="image-card-empty">
+                                        <span>📁 Clique ou arraste o logotipo aqui</span>
+                                    </div>
+                                </div>
+                                <div class="image-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Logo</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+
+                            <!-- Figura 01: Croqui de Localização -->
+                            <div class="image-upload-card" data-field="imgCroquiLocalizacao">
+                                <div class="image-card-header">
+                                    <div class="image-card-title">
+                                        <span class="image-card-icon">🛰️</span>
+                                        <strong>Figura 01 – Croqui de Localização</strong>
+                                    </div>
+                                    <span class="image-size-badge" style="display: none;"></span>
+                                </div>
+                                <p class="image-card-desc">Foto de satélite ou mapa (Google Earth / Maps) com destaque da usina.</p>
+                                <div class="image-card-dropzone">
+                                    <img class="image-card-preview" src="" alt="Figura 01 Preview" style="display: none;">
+                                    <div class="image-card-empty">
+                                        <span>📁 Clique ou arraste a imagem de satélite</span>
+                                    </div>
+                                </div>
+                                <div class="image-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Foto</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+
+                            <!-- Figura 02: Planta de Situação -->
+                            <div class="image-upload-card" data-field="imgPlantaSituacao">
+                                <div class="image-card-header">
+                                    <div class="image-card-title">
+                                        <span class="image-card-icon">🗺️</span>
+                                        <strong>Figura 02 – Planta de Situação</strong>
+                                    </div>
+                                    <span class="image-size-badge" style="display: none;"></span>
+                                </div>
+                                <p class="image-card-desc">Planta de arruamento, ruas de acesso e limites da vizinhança.</p>
+                                <div class="image-card-dropzone">
+                                    <img class="image-card-preview" src="" alt="Figura 02 Preview" style="display: none;">
+                                    <div class="image-card-empty">
+                                        <span>📁 Clique ou arraste a planta de situação</span>
+                                    </div>
+                                </div>
+                                <div class="image-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Foto</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+
+                            <!-- Figura 03: Localização dos Módulos -->
+                            <div class="image-upload-card" data-field="imgLocalizacaoModulos">
+                                <div class="image-card-header">
+                                    <div class="image-card-title">
+                                        <span class="image-card-icon">🏠</span>
+                                        <strong>Figura 03 – Localização dos Módulos / Telhado</strong>
+                                    </div>
+                                    <span class="image-size-badge" style="display: none;"></span>
+                                </div>
+                                <p class="image-card-desc">Foto do telhado ou solo destacando a área dos módulos, inversor e conexão.</p>
+                                <div class="image-card-dropzone">
+                                    <img class="image-card-preview" src="" alt="Figura 03 Preview" style="display: none;">
+                                    <div class="image-card-empty">
+                                        <span>📁 Clique ou arraste a foto do telhado</span>
+                                    </div>
+                                </div>
+                                <div class="image-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Foto</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+
+                            <!-- Figura 04: Disjuntor do Padrão -->
+                            <div class="image-upload-card" data-field="imgDisjuntorPadrao">
+                                <div class="image-card-header">
+                                    <div class="image-card-title">
+                                        <span class="image-card-icon">⚡</span>
+                                        <strong>Figura 04 – Disjuntor e Padrão de Entrada</strong>
+                                    </div>
+                                    <span class="image-size-badge" style="display: none;"></span>
+                                </div>
+                                <p class="image-card-desc">Foto real do disjuntor geral da caixa de medição do cliente.</p>
+                                <div class="image-card-dropzone">
+                                    <img class="image-card-preview" src="" alt="Figura 04 Preview" style="display: none;">
+                                    <div class="image-card-empty">
+                                        <span>📁 Clique ou arraste a foto do disjuntor</span>
+                                    </div>
+                                </div>
+                                <div class="image-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Foto</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+
+                            <!-- Figura 05: Placa de Advertência -->
+                            <div class="image-upload-card" data-field="imgPlacaSinalizacao">
+                                <div class="image-card-header">
+                                    <div class="image-card-title">
+                                        <span class="image-card-icon">🪧</span>
+                                        <strong>Figura 05 – Placa de Advertência (Opcional)</strong>
+                                    </div>
+                                    <span class="image-size-badge" style="display: none;"></span>
+                                </div>
+                                <p class="image-card-desc">Foto da placa física. Se deixado vazio, utiliza o modelo vetorial padrão.</p>
+                                <div class="image-card-dropzone">
+                                    <img class="image-card-preview" src="" alt="Figura 05 Preview" style="display: none;">
+                                    <div class="image-card-empty">
+                                        <span>📁 Clique ou arraste a foto da placa</span>
+                                    </div>
+                                </div>
+                                <div class="image-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Foto</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+
+                            <!-- Figura 06: Padrão de Medição -->
+                            <div class="image-upload-card" data-field="imgPadraoMedicao">
+                                <div class="image-card-header">
+                                    <div class="image-card-title">
+                                        <span class="image-card-icon">📐</span>
+                                        <strong>Figura 06 – Padrão de Medição BT (Opcional)</strong>
+                                    </div>
+                                    <span class="image-size-badge" style="display: none;"></span>
+                                </div>
+                                <p class="image-card-desc">Foto do padrão montado ou desenho técnico da distribuidora.</p>
+                                <div class="image-card-dropzone">
+                                    <img class="image-card-preview" src="" alt="Figura 06 Preview" style="display: none;">
+                                    <div class="image-card-empty">
+                                        <span>📁 Clique ou arraste o padrão de medição</span>
+                                    </div>
+                                </div>
+                                <div class="image-card-actions">
+                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Foto</button>
+                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </form>
+
+                <!-- Input global invisível para upload via clique/dropzone -->
+                <input type="file" id="globalImageFileInput" accept="image/*" style="display: none;">
             </section>
 
             <section class="preview-section">

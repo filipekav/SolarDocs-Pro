@@ -1,9 +1,10 @@
 function criarCarimboPrancha(d, pranchaNum, tituloPrancha, carimboX = 550, carimboY = 660, carimboW = 480, carimboH = 215) {
+    const logoSrc = d.logoEmpresa || ((typeof ASSETS !== 'undefined' && ASSETS.LOGO_JPEG) ? ASSETS.LOGO_JPEG : 'logo.jpeg');
     return `
         <rect x="${carimboX}" y="${carimboY}" width="${carimboW}" height="${carimboH}" fill="#fff" stroke="#c62828" stroke-width="1.8"/>
         
         <!-- Logo Image -->
-        <image href="${(typeof ASSETS !== 'undefined' && ASSETS.LOGO_JPEG) ? ASSETS.LOGO_JPEG : 'logo.jpeg'}" x="${carimboX + 8}" y="${carimboY + 8}" width="130" height="70" preserveAspectRatio="xMinYMin meet"/>
+        <image href="${logoSrc}" x="${carimboX + 8}" y="${carimboY + 8}" width="130" height="70" preserveAspectRatio="xMinYMin meet"/>
 
         <!-- Empresa Header -->
         <text x="${carimboX + 150}" y="${carimboY + 28}" font-size="15" font-family="Arial" font-weight="bold" fill="#00838f">${d.empresaNome || ''}</text>
