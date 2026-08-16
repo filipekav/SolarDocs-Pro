@@ -4,7 +4,9 @@
 
 ![Versão](https://img.shields.io/badge/vers%C3%A3o-1.0.0-blue.svg)
 ![Licença](https://img.shields.io/badge/licen%C3%A7a-MIT-green.svg)
-![Tecnologias](https://img.shields.io/badge/tecnologias-HTML5%20%7C%20CSS3%20%7C%20JavaScript-orange.svg)
+![Deploy](https://img.shields.io/badge/demo-GitHub%20Pages-success.svg)
+
+🌐 **Acesse a versão online:** [https://filipekav.github.io/SolarDocs-Pro/](https://filipekav.github.io/SolarDocs-Pro/)
 
 ---
 
