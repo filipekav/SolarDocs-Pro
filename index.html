@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SolarDocs - Gestão de Projetos e Documentação de Microgeração</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- ========================================================================= -->
+    <!-- VIEW 1: DASHBOARD DE GESTÃO DE PROJETOS                                    -->
+    <!-- ========================================================================= -->
+    <div id="viewDashboard" class="app-view active">
+        <header class="dashboard-header">
+            <div class="header-content">
+                <div class="brand-section">
+                    <div class="brand-badge">
+                        <span class="solar-icon">⚡</span>
+                    </div>
+                    <div>
+                        <h1>SolarDocs Pro</h1>
+                        <p>Gestão de Projetos e Engenharia de Microgeração Solar</p>
+                    </div>
+                </div>
+
+                <!-- Resumo / Métricas Rápidas -->
+                <div class="metrics-bar">
+                    <div class="metric-card">
+                        <span class="metric-label">Projetos Salvos</span>
+                        <strong class="metric-value" id="metricTotalProjects">0</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Potência Total</span>
+                        <strong class="metric-value highlight" id="metricTotalPower">0 kWp</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">Armazenamento</span>
+                        <strong class="metric-value"><span class="status-dot"></span>Navegador Local</strong>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="dashboard-container">
+            <!-- Barra de Ações e Filtros -->
+            <section class="dashboard-toolbar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="searchProjectsInput" placeholder="Buscar por cliente, cidade, UC ou potência..." autocomplete="off">
+                </div>
+
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" id="btnImportJson" title="Importar arquivo JSON de projeto">
+                        <span class="btn-icon">📥</span> Importar JSON
+                    </button>
+                    <input type="file" id="importFileInput" accept=".json" style="display: none;">
+
+                    <button class="btn btn-secondary" id="btnExportAll" title="Baixar backup completo de todos os projetos em JSON">
+                        <span class="btn-icon">📦</span> Backup Geral
+                    </button>
+
+                    <button class="btn btn-primary btn-new-project" id="btnNewProject">
+                        <span class="btn-icon">➕</span> Novo Projeto
+                    </button>
+                </div>
+            </section>
+
+            <!-- Grid de Listagem de Projetos -->
+            <section class="projects-section">
+                <div class="section-title-row">
+                    <h2>Meus Projetos Solares</h2>
+                    <span class="project-count" id="projectCountBadge">0 projetos</span>
+                </div>
+
+                <div class="projects-grid" id="projectsGrid">
+                    <!-- Cards gerados dinamicamente via JS -->
+                </div>
+
+                <!-- Estado Vazio (Empty State) -->
+                <div class="empty-projects-state" id="emptyProjectsState" style="display: none;">
+                    <div class="empty-icon">📂</div>
+                    <h3>Nenhum projeto encontrado</h3>
+                    <p id="emptyStateMessage">Você ainda não possui projetos salvos. Crie um novo projeto ou importe um backup em JSON para começar.</p>
+                    <button class="btn btn-primary" id="btnEmptyNewProject">➕ Criar Primeiro Projeto</button>
+                </div>
+            </section>
+        </main>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- VIEW 2: EDITOR E GERADOR DE DOCUMENTOS                                    -->
+    <!-- ========================================================================= -->
+    <div id="viewEditor" class="app-view">
+        <header class="editor-header">
+            <div class="editor-header-content">
+                <div class="editor-nav-left">
+                    <button class="btn btn-back" id="btnBackToDashboard" title="Voltar ao Painel de Projetos">
+                        <span class="btn-icon">←</span> Voltar aos Projetos
+                    </button>
+                    <div class="active-project-info">
+                        <div class="project-title-wrapper">
+                            <h1 id="activeProjectTitle">Projeto Solar</h1>
+                            <button class="btn-icon-edit" id="btnRenameProject" title="Renomear Projeto">✏️</button>
+                        </div>
+                        <div class="project-meta-badges">
+                            <span class="badge badge-power" id="activeProjectPowerBadge">0 kWp</span>
+                            <span class="badge badge-uc" id="activeProjectUcBadge">UC: ---</span>
+                            <span class="badge badge-save" id="autoSaveIndicator">✓ Salvo no navegador</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="editor-actions-right">
+                    <button class="btn btn-print" id="btnPrintDocument" title="Imprimir este documento">
+                        <span class="btn-icon">🖨️</span> Imprimir
+                    </button>
+                    <button class="btn btn-save-pdf" id="btnSavePdfDocument" title="Função desativada temporariamente" disabled style="opacity: 0.5; cursor: not-allowed;">
+                        <span class="btn-icon">📄</span> Salvar PDF
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <main class="container">
+            <section class="form-section">
+                <div class="tabs">
+                    <button class="tab-btn active" data-tab="cliente">Cliente / UC</button>
+                    <button class="tab-btn" data-tab="sistema">Sistema / Painéis</button>
+                    <button class="tab-btn" data-tab="empresa">Empresa / Técnico</button>
+                </div>
+
+                <form id="docForm">
+                    <!-- Aba Cliente -->
+                    <div class="tab-content active" id="cliente">
+                        <h2>Dados do Cliente e Unidade Consumidora</h2>
+                        <div class="grid-2">
+                            <label class="full-width">Nome do Cliente <input type="text" name="clienteNome" value=""></label>
+                            <label>CPF/CNPJ <input type="text" name="clienteCpf" value=""></label>
+                            <label>Telefone <input type="text" name="clienteTelefone" value=""></label>
+                            <label class="full-width">E-mail <input type="email" name="clienteEmail" value=""></label>
+
+                            <h3 class="full-width">Endereço da Unidade Consumidora</h3>
+                            <label class="full-width">Endereço (Rua, Av., Logradouro) <input type="text" name="endereco" value=""></label>
+                            <label>Nº <input type="text" name="numero" value=""></label>
+                            <label>Bairro <input type="text" name="bairro" value=""></label>
+                            <label>Cidade <input type="text" name="cidade" value=""></label>
+                            <label>CEP <input type="text" name="cep" value=""></label>
+                            <label>Latitude <input type="text" name="latitude" value=""></label>
+                            <label>Longitude <input type="text" name="longitude" value=""></label>
+
+                            <h3 class="full-width">Padrão de Entrada e Concessionária</h3>
+                            <label>Nº da UC <input type="text" name="uc" value=""></label>
+                            <label>Grupo
+                                <select name="grupo">
+                                    <option value="B" selected>B</option>
+                                    <option value="A">A</option>
+                                </select>
+                            </label>
+                            <label>Classe / Modalidade <input type="text" name="modalidade" value="B1 RESIDENCIAL"></label>
+                            <label>Tipo de Conexão
+                                <select name="tipoConexao">
+                                    <option value="MONOFÁSICA" selected>Monofásica</option>
+                                    <option value="BIFÁSICA">Bifásica</option>
+                                    <option value="TRIFÁSICA">Trifásica</option>
+                                </select>
+                            </label>
+                            <label>Tensão de Atendimento (V) <input type="text" name="tensaoAtendimento" value="220"></label>
+                            <label>Disjuntor do Padrão de Entrada (A) <input type="text" name="disjuntorEntrada" value="32"></label>
+                            <label>Tipo de Ramal
+                                <select name="tipoRamal">
+                                    <option value="Aéreo" selected>Aéreo</option>
+                                    <option value="Subterrâneo">Subterrâneo</option>
+                                </select>
+                            </label>
+                            <label>Tipo de Medidor
+                                <select name="tipoMedidor">
+                                    <option value="Bidirecional" selected>Bidirecional</option>
+                                    <option value="Comum">Comum</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Aba Sistema -->
+                    <div class="tab-content" id="sistema">
+                        <h2>Dados do Sistema Fotovoltaico</h2>
+                        <div class="grid-2">
+                            <label>Potência Instalada (kW) <input type="text" name="potenciaSistema" value="6"></label>
+                            <label>Tensão Nominal de Geração (V) <input type="text" name="tensaoGeracao" value="220"></label>
+                            <label class="full-width">Tipo de Fonte
+                                <select name="tipoFonte">
+                                    <option value="Solar Fotovoltaica" selected>Solar Fotovoltaica</option>
+                                    <option value="Eólica">Eólica</option>
+                                    <option value="Hidraúlica">Hidraúlica</option>
+                                    <option value="Biomassa">Biomassa</option>
+                                    <option value="Cogeração Qualificada">Cogeração Qualificada</option>
+                                </select>
+                            </label>
+
+                            <h3 class="full-width">Módulos Fotovoltaicos</h3>
+                            <label>Marca <input type="text" name="moduloMarca" value="TSUN"></label>
+                            <label>Modelo <input type="text" name="moduloModelo" value="TS600S8E-132GANT"></label>
+                            <label>Potência do Módulo (Wp) <input type="text" name="moduloPotencia" value="600"></label>
+                            <label>Tipo de Módulo <input type="text" name="moduloTipo" value="Monocristalino"></label>
+                            <label>Strings por Inversor <input type="number" name="stringsPorInversor" value="2"></label>
+                            <label>Módulos por String <input type="number" name="modulosPorString" value="8"></label>
+                            <label>Total de Strings (Calculado) <input type="number" name="stringsQtd" value="2" readonly
+                                    style="background-color: #e9ecef; cursor: not-allowed;"
+                                    title="Calculado automaticamente: Inversores x Strings por Inversor"></label>
+                            <label>Quantidade Total Módulos (Calculado) <input type="number" name="moduloQtd" value="16"
+                                    readonly style="background-color: #e9ecef; cursor: not-allowed;"
+                                    title="Calculado automaticamente: Total de Strings x Módulos por String"></label>
+                            <label>Corrente de Curto Circuito ISC (A) <input type="text" name="moduloIsc" value="16,05"></label>
+                            <label>Corrente MPP IMP (A) <input type="text" name="moduloImp" value="15,34"></label>
+                            <label>Tensão de Circuito Aberto VOC (V) <input type="text" name="moduloVoc" value="48,10"></label>
+                            <label>Tensão MPP VMP (V) <input type="text" name="moduloVmp" value="39,77"></label>
+                            <label>Eficiência (%) <input type="text" name="moduloEficiencia" value="21,41"></label>
+                            <label>NOCT (°C) <input type="text" name="moduloNoct" value="41°C±3°C"></label>
+                            <label>Coef. Temp. VOC (%/°C) <input type="text" name="moduloCoefTemp" value="-0,28"></label>
+                            <label class="full-width">Dimensões (CxLxE mm) <input type="text" name="moduloDimensoes" value="2.384x1.134x35"></label>
+
+                            <h3 class="full-width">Inversor</h3>
+                            <label>Marca <input type="text" name="inversorMarca" value="SAJ"></label>
+                            <label>Modelo <input type="text" name="inversorModelo" value="R5-6K-S2-15"></label>
+                            <label>Potência Nominal (W) <input type="text" name="inversorPotencia" value="6000"></label>
+                            <label>Potência Máx. Entrada CC (W) <input type="text" name="inversorPotMaxCc" value="6000"></label>
+                            <label>Quantidade <input type="number" name="inversorQtd" value="1"></label>
+                            <label>Tipo de Saída
+                                <select name="inversorTipoSaida">
+                                    <option value="MONOFÁSICA" selected>Monofásica</option>
+                                    <option value="BIFÁSICA">Bifásica</option>
+                                    <option value="TRIFÁSICA">Trifásica</option>
+                                </select>
+                            </label>
+                            <label>Tensão de Entrada (V) <input type="text" name="inversorVEntrada" value="60"></label>
+                            <label>Tensão Máx. de Entrada (V) <input type="text" name="inversorVMaxEntrada" value="650"></label>
+                            <label>Tensão de Saída (V) <input type="text" name="inversorVSaida" value="220"></label>
+                            <label>Eficiência (%) <input type="text" name="inversorEficiencia" value="97,50"></label>
+                            <label>Corrente Máx. Entrada (A) <input type="text" name="inversorIMaxEntrada" value="18,78"></label>
+                            <label>Corrente Máx. por MPPT (A) <input type="text" name="inversorIMaxMppt" value="19"></label>
+                            <label class="full-width">Corrente Nominal Saída (A) <input type="text" name="inversorINominal" value="26,7"></label>
+
+                            <h3 class="full-width">Proteções e Condutores</h3>
+                            <label>Disjuntor CA (A) <input type="text" name="disjuntorCA" value="32"></label>
+                            <label>Curva Disjuntor CA <input type="text" name="curvaDisjuntorCA" value="C"></label>
+                            <label>Disjuntor QGBT (A) <input type="text" name="disjuntorQGBT" value="40"></label>
+                            <label>Cabo Terra (mm²) <input type="text" name="caboTerra" value="4,0"></label>
+                            <label class="full-width">DPS CA Classe/Specs <input type="text" name="dpsCA" value="2x DPS Classe II - 275 VCA - 20/40 kA (1 fase + 1 neutro)"></label>
+                            <label>Cabo CC Positivo (mm²) <input type="text" name="caboCCPos" value="4,0"></label>
+                            <label>Cabo CC Negativo (mm²) <input type="text" name="caboCCNeg" value="4,0"></label>
+                            <label>Cabo CA Fase (mm²) <input type="text" name="caboCAFase" value="6,0"></label>
+                            <label>Cabo CA Neutro (mm²) <input type="text" name="caboCANeutro" value="6,0"></label>
+                            <label>Comprimento Cabo CC (m) <input type="text" name="comprCC" value="25"></label>
+                            <label>Comprimento Cabo CA (m) <input type="text" name="comprCA" value="25"></label>
+                            <label>Queda Tensão CC (%) <input type="text" name="quedaCC" value="1,12"></label>
+                            <label>Queda Tensão CA (%) <input type="text" name="quedaCA" value="0,76"></label>
+                        </div>
+
+                        <h3 style="margin-top: 1.5rem;">Previsão de Geração Mensal (kWh)</h3>
+                        <div class="grid-3" id="geracaoMensal">
+                            <label>Jan <input type="number" name="gerJan" value="750"></label>
+                            <label>Fev <input type="number" name="gerFev" value="720"></label>
+                            <label>Mar <input type="number" name="gerMar" value="780"></label>
+                            <label>Abr <input type="number" name="gerAbr" value="760"></label>
+                            <label>Mai <input type="number" name="gerMai" value="740"></label>
+                            <label>Jun <input type="number" name="gerJun" value="700"></label>
+                            <label>Jul <input type="number" name="gerJul" value="720"></label>
+                            <label>Ago <input type="number" name="gerAgo" value="760"></label>
+                            <label>Set <input type="number" name="gerSet" value="800"></label>
+                            <label>Out <input type="number" name="gerOut" value="820"></label>
+                            <label>Nov <input type="number" name="gerNov" value="790"></label>
+                            <label>Dez <input type="number" name="gerDez" value="770"></label>
+                        </div>
+                    </div>
+
+                    <!-- Aba Empresa -->
+                    <div class="tab-content" id="empresa">
+                        <h2>Dados da Empresa e Responsável Técnico</h2>
+                        <div class="grid-2">
+                            <label class="full-width">Nome da Empresa <input type="text" name="empresaNome" value="Nova Energy LTDA"></label>
+                            <label>CNPJ da Empresa <input type="text" name="empresaCnpj" value="62.506.839/0001-53"></label>
+                            <label>Cidade/UF do Documento <input type="text" name="cidadeDoc" value="Pacajus - CE"></label>
+                            <label class="full-width">Endereço da Empresa <input type="text" name="empresaEndereco" value="Rua Conego Eduardo Araripe, 1750, Centro, Pacajus-CE"></label>
+                            <label class="full-width">Nome do Responsável Técnico <input type="text" name="tecnicoNome" value="TEC. JESUS ITHALO"></label>
+                            <label>CPF do Técnico <input type="text" name="tecnicoCpf" value="104.152.573-79"></label>
+                            <label>Registro (CFT/CRT) <input type="text" name="tecnicoRegistro" value="2605536652"></label>
+                            <label class="full-width">Data do Projeto <input type="date" name="dataProjeto" value="2026-07-20"></label>
+                        </div>
+                    </div>
+                </form>
+            </section>
+
+            <section class="preview-section">
+                <div class="preview-header">
+                    <h2>Pré-visualização</h2>
+                    <div class="doc-selector-buttons">
+                        <button class="btn btn-primary" id="btnDiagrama">Diagrama Unifilar</button>
+                        <button class="btn btn-secondary" id="btnMemorial">Memorial Descritivo</button>
+                        <button class="btn btn-secondary" id="btnFormulario">Formulário de Acesso</button>
+                    </div>
+                </div>
+                <div id="previewContainer" class="preview-container">
+                    <p class="empty-state">Clique em um dos botões acima para gerar o documento.</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+
+    <!-- ========================================================================= -->
+    <!-- MODAIS E COMPONENTES GLOBAIS                                              -->
+    <!-- ========================================================================= -->
+
+    <!-- Modal: Criar / Renomear Projeto -->
+    <div class="modal-backdrop" id="modalProjectName" style="display: none;">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3 id="modalProjectNameTitle">Novo Projeto Solar</h3>
+                <button class="btn-close-modal" id="btnCloseProjectNameModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <label for="projectNameInput" class="modal-label">Nome do Projeto ou Identificação:</label>
+                <input type="text" id="projectNameInput" class="modal-input" placeholder="Ex: Residência Sr. Carlos - 8.5 kWp" autocomplete="off">
+                <p class="modal-hint">Você poderá preencher todos os dados técnicos na próxima tela.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btnCancelProjectName">Cancelar</button>
+                <button class="btn btn-primary" id="btnConfirmProjectName">Salvar e Abrir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Confirmar Exclusão -->
+    <div class="modal-backdrop" id="modalDeleteConfirm" style="display: none;">
+        <div class="modal-box modal-danger">
+            <div class="modal-header">
+                <h3>Excluir Projeto</h3>
+                <button class="btn-close-modal" id="btnCloseDeleteModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o projeto <strong id="deleteProjectNameTarget">---</strong>?</p>
+                <p class="modal-danger-warning">⚠️ Esta ação removerá o projeto do armazenamento local e não poderá ser desfeita.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="btnCancelDelete">Cancelar</button>
+                <button class="btn btn-danger" id="btnConfirmDelete">Sim, Excluir</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Container de Notificações Toast -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Scripts da Aplicação -->
+    <script src="js/jspdf.umd.min.js"></script>
+    <script src="js/html2canvas.min.js"></script>
+    <script src="js/assets.js"></script>
+    <script src="js/storage.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/diagrama.js"></script>
+    <script src="js/memorial.js"></script>
+    <script src="js/formulario.js"></script>
+    <script src="js/app.js"></script>
+</body>
+
+</html>
