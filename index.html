@@ -133,7 +133,6 @@
                     <button class="tab-btn active" data-tab="cliente">Cliente / UC</button>
                     <button class="tab-btn" data-tab="sistema">Sistema / Painéis</button>
                     <button class="tab-btn" data-tab="empresa">Empresa / Técnico</button>
-                    <button class="tab-btn" data-tab="imagens">📷 Imagens / Memorial</button>
                 </div>
 
                 <form id="docForm">
@@ -278,30 +277,12 @@
                             <label>Nov <input type="number" name="gerNov" value="790"></label>
                             <label>Dez <input type="number" name="gerDez" value="770"></label>
                         </div>
-                    </div>
 
-                    <!-- Aba Empresa -->
-                    <div class="tab-content" id="empresa">
-                        <h2>Dados da Empresa e Responsável Técnico</h2>
-                        <div class="grid-2">
-                            <label class="full-width">Nome da Empresa <input type="text" name="empresaNome" value="Nova Energy LTDA"></label>
-                            <label>CNPJ da Empresa <input type="text" name="empresaCnpj" value="62.506.839/0001-53"></label>
-                            <label>Cidade/UF do Documento <input type="text" name="cidadeDoc" value="Pacajus - CE"></label>
-                            <label class="full-width">Endereço da Empresa <input type="text" name="empresaEndereco" value="Rua Conego Eduardo Araripe, 1750, Centro, Pacajus-CE"></label>
-                            <label class="full-width">Nome do Responsável Técnico <input type="text" name="tecnicoNome" value="TEC. JESUS ITHALO"></label>
-                            <label>CPF do Técnico <input type="text" name="tecnicoCpf" value="104.152.573-79"></label>
-                            <label>Registro (CFT/CRT) <input type="text" name="tecnicoRegistro" value="2605536652"></label>
-                            <label class="full-width">Data do Projeto <input type="date" name="dataProjeto" value="2026-07-20"></label>
-                        </div>
-                    </div>
+                        <!-- Imagens do Projeto Fotovoltaico -->
+                        <h3 style="margin-top: 1.75rem;">Imagens e Fotos do Projeto (Memorial Descritivo)</h3>
+                        <p class="tab-intro-text">Fotos reais do projeto para o memorial. Redimensionadas e comprimidas automaticamente via <strong>IndexedDB</strong>.</p>
 
-                    <!-- Aba Imagens do Memorial -->
-                    <div class="tab-content" id="imagens">
-                        <h2>Imagens e Figuras do Memorial Descritivo</h2>
-                        <p class="tab-intro-text">Faça o upload das fotos reais do projeto. Todas as imagens são redimensionadas e comprimidas automaticamente via <strong>IndexedDB</strong>, garantindo máxima nitidez sem pesar.</p>
-
-                        <!-- Campos ocultos de persistência -->
-                        <input type="hidden" name="logoEmpresa" id="input_logoEmpresa">
+                        <!-- Campos ocultos de persistência das imagens do sistema -->
                         <input type="hidden" name="imgCroquiLocalizacao" id="input_imgCroquiLocalizacao">
                         <input type="hidden" name="imgPlantaSituacao" id="input_imgPlantaSituacao">
                         <input type="hidden" name="imgLocalizacaoModulos" id="input_imgLocalizacaoModulos">
@@ -310,28 +291,6 @@
                         <input type="hidden" name="imgPadraoMedicao" id="input_imgPadraoMedicao">
 
                         <div class="image-upload-grid">
-                            <!-- Logo da Empresa -->
-                            <div class="image-upload-card" data-field="logoEmpresa">
-                                <div class="image-card-header">
-                                    <div class="image-card-title">
-                                        <span class="image-card-icon">🏢</span>
-                                        <strong>Logotipo da Empresa</strong>
-                                    </div>
-                                    <span class="image-size-badge" style="display: none;"></span>
-                                </div>
-                                <p class="image-card-desc">Substitui o logo padrão nos carimbos das 6 pranchas e na capa do memorial.</p>
-                                <div class="image-card-dropzone">
-                                    <img class="image-card-preview" src="" alt="Logo Preview" style="display: none;">
-                                    <div class="image-card-empty">
-                                        <span>📁 Clique ou arraste o logotipo aqui</span>
-                                    </div>
-                                </div>
-                                <div class="image-card-actions">
-                                    <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Logo</button>
-                                    <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
-                                </div>
-                            </div>
-
                             <!-- Figura 01: Croqui de Localização -->
                             <div class="image-upload-card" data-field="imgCroquiLocalizacao">
                                 <div class="image-card-header">
@@ -461,6 +420,47 @@
                                 <div class="image-card-actions">
                                     <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Foto</button>
                                     <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Aba Empresa -->
+                    <div class="tab-content" id="empresa">
+                        <h2>Dados da Empresa e Responsável Técnico</h2>
+                        <div class="grid-2">
+                            <label class="full-width">Nome da Empresa <input type="text" name="empresaNome" value="Nova Energy LTDA"></label>
+                            <label>CNPJ da Empresa <input type="text" name="empresaCnpj" value="62.506.839/0001-53"></label>
+                            <label>Cidade/UF do Documento <input type="text" name="cidadeDoc" value="Pacajus - CE"></label>
+                            <label class="full-width">Endereço da Empresa <input type="text" name="empresaEndereco" value="Rua Conego Eduardo Araripe, 1750, Centro, Pacajus-CE"></label>
+                            <label class="full-width">Nome do Responsável Técnico <input type="text" name="tecnicoNome" value="TEC. JESUS ITHALO"></label>
+                            <label>CPF do Técnico <input type="text" name="tecnicoCpf" value="104.152.573-79"></label>
+                            <label>Registro (CFT/CRT) <input type="text" name="tecnicoRegistro" value="2605536652"></label>
+                            <label class="full-width">Data do Projeto <input type="date" name="dataProjeto" value="2026-07-20"></label>
+
+                            <!-- Logotipo da Empresa -->
+                            <h3 class="full-width" style="margin-top: 1rem;">Logotipo da Empresa</h3>
+                            <input type="hidden" name="logoEmpresa" id="input_logoEmpresa">
+                            <div class="full-width">
+                                <div class="image-upload-card" data-field="logoEmpresa">
+                                    <div class="image-card-header">
+                                        <div class="image-card-title">
+                                            <span class="image-card-icon">🏢</span>
+                                            <strong>Logotipo da Empresa</strong>
+                                        </div>
+                                        <span class="image-size-badge" style="display: none;"></span>
+                                    </div>
+                                    <p class="image-card-desc">Substitui o logotipo padrão nos carimbos das 6 pranchas e na capa do memorial.</p>
+                                    <div class="image-card-dropzone">
+                                        <img class="image-card-preview" src="" alt="Logo Preview" style="display: none;">
+                                        <div class="image-card-empty">
+                                            <span>📁 Clique ou arraste o logotipo aqui</span>
+                                        </div>
+                                    </div>
+                                    <div class="image-card-actions">
+                                        <button type="button" class="btn btn-sm btn-outline btn-select-image">Selecionar Logo</button>
+                                        <button type="button" class="btn btn-sm btn-danger btn-remove-image" style="display: none;">Remover</button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
