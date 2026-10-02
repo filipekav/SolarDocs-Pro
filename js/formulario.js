@@ -27,6 +27,26 @@ function gerarFormularioAcesso(data) {
     const isBiomassa = (d.tipoFonte || '').toLowerCase().includes('biomassa');
     const isCogeracao = (d.tipoFonte || '').toLowerCase().includes('cogeração') || (d.tipoFonte || '').toLowerCase().includes('cogeracao');
 
+    // Potência instalada de geração (kW): potência total dos inversores (Potência Nominal x Quantidade) em kW
+    let rawPotInvStr = String(d.inversorPotencia || '').trim();
+    if (rawPotInvStr.includes(',') && rawPotInvStr.includes('.')) {
+        rawPotInvStr = rawPotInvStr.replace(/\./g, '').replace(',', '.');
+    } else if (rawPotInvStr.includes(',')) {
+        rawPotInvStr = rawPotInvStr.replace(',', '.');
+    }
+    const potInvVal = parseFloat(rawPotInvStr) || 0;
+    const qtdInv = Math.max(1, parseInt(d.inversorQtd, 10) || 1);
+
+    let potenciaGeracaoKw = '';
+    if (potInvVal > 0) {
+        // Se maior que 100, valor está em Watts (ex: 6000W -> 6kW); se <= 100, já está em kW (ex: 6kW)
+        const potUnitKw = potInvVal > 100 ? (potInvVal / 1000) : potInvVal;
+        const totalKw = potUnitKw * qtdInv;
+        potenciaGeracaoKw = Number.isInteger(totalKw) ? String(totalKw) : String(parseFloat(totalKw.toFixed(3)));
+    } else if (d.potenciaSistema) {
+        potenciaGeracaoKw = String(d.potenciaSistema);
+    }
+
     return `
         <div class="doc-page form-ugd-page">
             <!-- CABEÇALHO DO FORMULÁRIO ENEL -->
@@ -157,7 +177,7 @@ function gerarFormularioAcesso(data) {
             <table class="enel-table">
                 <tr>
                     <td colspan="2">
-                        <strong>Potência instalada de geração (kW):</strong> ${d.potenciaSistema || ''}
+                        <strong>Potência instalada de geração (kW):</strong> ${potenciaGeracaoKw}
                     </td>
                 </tr>
                 <tr>
