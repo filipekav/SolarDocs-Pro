@@ -96,6 +96,12 @@ const DEFAULT_PROJECT_TEMPLATE = {
     tecnicoRegistro: "2605536652",
     dataProjeto: new Date().toISOString().split('T')[0],
     cidadeDoc: "Pacajus - CE",
+    // Homologação e Acompanhamento na Concessionária
+    statusProjeto: "Envio Pendente",
+    solicitacaoNumero: "",
+    solicitacaoLink: "",
+    solicitacaoData: "",
+    solicitacaoObs: "",
     // Campos de Imagens & Anexos (Base64 Otimizado)
     logoEmpresa: null,
     imgCroquiLocalizacao: null,

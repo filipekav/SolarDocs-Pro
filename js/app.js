@@ -37,6 +37,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnRenameProject = document.getElementById('btnRenameProject');
     const activeProjectPowerBadge = document.getElementById('activeProjectPowerBadge');
     const activeProjectUcBadge = document.getElementById('activeProjectUcBadge');
+    const activeProjectStatusBadge = document.getElementById('activeProjectStatusBadge');
+    const statusFiltersBar = document.getElementById('statusFiltersBar');
+    const btnTestSolicitacaoLink = document.getElementById('btnTestSolicitacaoLink');
+    let selectedStatusFilter = 'all';
+
     const autoSaveIndicator = document.getElementById('autoSaveIndicator');
     const btnDiagrama = document.getElementById('btnDiagrama');
     const btnMemorial = document.getElementById('btnMemorial');
@@ -86,12 +91,59 @@ document.addEventListener('DOMContentLoaded', () => {
 
         activeProjectId = project.id;
         ProjectStorage.setActiveId(project.id);
-        
+
         // Preenche o formulário com os dados salvos
         setFormData(project.data);
-        
+
         switchView('editor');
         showToast(`Projeto "${project.nome}" carregado`, 'success');
+    }
+
+    function getStatusConfig(status) {
+        const s = String(status || '').trim();
+        if (s.includes('Enviado')) {
+            return {
+                key: 'enviado',
+                label: 'Enviado para Enel',
+                icon: '📤',
+                badgeClass: 'status-enviado',
+                desc: 'Protocolado / Aguardando análise da distribuidora'
+            };
+        }
+        if (s.includes('Aprovado')) {
+            return {
+                key: 'aprovado',
+                label: 'Aprovado',
+                icon: '✅',
+                badgeClass: 'status-aprovado',
+                desc: 'Parecer de Acesso favorável emitido'
+            };
+        }
+        if (s.includes('Vistoria')) {
+            return {
+                key: 'vistoria',
+                label: 'Vistoria Solicitada',
+                icon: '🔍',
+                badgeClass: 'status-vistoria',
+                desc: 'Aguardando inspeção / troca de medidor'
+            };
+        }
+        if (s.includes('Concluido') || s.includes('Concluído')) {
+            return {
+                key: 'concluido',
+                label: 'Concluído',
+                icon: '🏆',
+                badgeClass: 'status-concluido',
+                desc: 'Usina conectada e homologada'
+            };
+        }
+        return {
+            key: 'pendente',
+            label: 'Envio Pendente',
+            icon: '⏳',
+            badgeClass: 'status-pendente',
+            desc: 'Documentação em elaboração'
+        };
     }
 
     function updateActiveProjectHeader() {
@@ -99,12 +151,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!project) return;
 
         activeProjectTitle.textContent = project.nome || 'Projeto Sem Nome';
-        
+
         const pot = project.data?.potenciaSistema || project.data?.potencia || '0';
         activeProjectPowerBadge.textContent = `${pot} kWp`;
-        
+
         const uc = project.data?.uc ? `UC: ${project.data.uc}` : 'UC: Não informada';
         activeProjectUcBadge.textContent = uc;
+
+        const status = project.data?.statusProjeto || 'Envio Pendente';
+        const stCfg = getStatusConfig(status);
+        if (activeProjectStatusBadge) {
+            activeProjectStatusBadge.textContent = `${stCfg.icon} ${stCfg.label}`;
+            activeProjectStatusBadge.className = `badge badge-status ${stCfg.badgeClass}`;
+        }
     }
 
     // =========================================================================
@@ -113,27 +172,62 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderDashboard() {
         const allProjects = ProjectStorage.getAll();
-        
-        // Atualiza KPIs do topo
+
+        // Atualiza KPIs e contadores de status do topo
         let totalPower = 0;
+        const statusCounts = {
+            all: allProjects.length,
+            pendente: 0,
+            enviado: 0,
+            aprovado: 0,
+            vistoria: 0,
+            concluido: 0
+        };
+
         allProjects.forEach(p => {
             const pot = parseFloat(p.data?.potenciaSistema || p.data?.potencia || 0);
             if (!isNaN(pot)) totalPower += pot;
+
+            const stCfg = getStatusConfig(p.data?.statusProjeto || 'Envio Pendente');
+            if (statusCounts[stCfg.key] !== undefined) {
+                statusCounts[stCfg.key]++;
+            }
         });
 
         metricTotalProjects.textContent = allProjects.length;
         metricTotalPower.textContent = `${totalPower.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWp`;
 
-        // Filtragem por busca
+        // Atualiza contadores visuais nos botões de filtro
+        const elCountAll = document.getElementById('countStatusAll');
+        if (elCountAll) elCountAll.textContent = statusCounts.all;
+        const elCountPendente = document.getElementById('countStatusPendente');
+        if (elCountPendente) elCountPendente.textContent = statusCounts.pendente;
+        const elCountEnviado = document.getElementById('countStatusEnviado');
+        if (elCountEnviado) elCountEnviado.textContent = statusCounts.enviado;
+        const elCountAprovado = document.getElementById('countStatusAprovado');
+        if (elCountAprovado) elCountAprovado.textContent = statusCounts.aprovado;
+        const elCountVistoria = document.getElementById('countStatusVistoria');
+        if (elCountVistoria) elCountVistoria.textContent = statusCounts.vistoria;
+        const elCountConcluido = document.getElementById('countStatusConcluido');
+        if (elCountConcluido) elCountConcluido.textContent = statusCounts.concluido;
+
+        // Filtragem por busca e por status selecionado
         const query = searchQuery.trim().toLowerCase();
         const filteredProjects = allProjects.filter(p => {
+            const stCfg = getStatusConfig(p.data?.statusProjeto || 'Envio Pendente');
+            if (selectedStatusFilter !== 'all' && stCfg.key !== selectedStatusFilter) {
+                return false;
+            }
+
             if (!query) return true;
             const nome = (p.nome || '').toLowerCase();
             const cliente = (p.data?.clienteNome || '').toLowerCase();
             const cidade = (p.data?.cidade || '').toLowerCase();
             const uc = (p.data?.uc || '').toLowerCase();
             const pot = String(p.data?.potenciaSistema || '').toLowerCase();
-            return nome.includes(query) || cliente.includes(query) || cidade.includes(query) || uc.includes(query) || pot.includes(query);
+            const solicitacao = String(p.data?.solicitacaoNumero || '').toLowerCase();
+            const statusTxt = String(p.data?.statusProjeto || '').toLowerCase();
+            return nome.includes(query) || cliente.includes(query) || cidade.includes(query) || uc.includes(query) || pot.includes(query) || solicitacao.includes(query) || statusTxt.includes(query);
         });
 
         projectCountBadge.textContent = `${filteredProjects.length} ${filteredProjects.length === 1 ? 'projeto' : 'projetos'}`;
@@ -142,8 +236,8 @@ document.addEventListener('DOMContentLoaded', () => {
             projectsGrid.innerHTML = '';
             emptyProjectsState.style.display = 'block';
             const emptyMsg = document.getElementById('emptyStateMessage');
-            if (query) {
-                emptyMsg.textContent = `Nenhum projeto corresponde à pesquisa "${searchQuery}". Tente outros termos.`;
+            if (query || selectedStatusFilter !== 'all') {
+                emptyMsg.textContent = `Nenhum projeto encontrado com os filtros atuais. Tente buscar outros termos ou alterar o filtro de status.`;
             } else {
                 emptyMsg.textContent = 'Você ainda não possui projetos salvos. Crie um novo projeto ou importe um backup em JSON para começar.';
             }
@@ -162,6 +256,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const invQtd = data.inversorQtd || 1;
             const invMod = data.inversorModelo || 'Inversor';
             const timeAgo = formatRelativeTime(proj.atualizadoEm);
+            const stCfg = getStatusConfig(data.statusProjeto || 'Envio Pendente');
+            const solicitacaoNum = data.solicitacaoNumero ? String(data.solicitacaoNumero).trim() : '';
+            const solicitacaoLink = data.solicitacaoLink ? String(data.solicitacaoLink).trim() : '';
 
             return `
                 <div class="project-card" data-id="${proj.id}">
@@ -171,6 +268,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p class="project-card-client" title="${escapeHTML(cliente)}">👤 ${escapeHTML(cliente)}</p>
                         </div>
                         <div class="project-card-power-badge">⚡ ${pot} kWp</div>
+                    </div>
+
+                    <!-- Barra com Badge de Status da Homologação -->
+                    <div class="project-card-status-bar">
+                        <span class="project-card-status-badge ${stCfg.badgeClass}">
+                            <span class="status-dot"></span>
+                            ${stCfg.icon} ${stCfg.label}
+                        </span>
                     </div>
 
                     <div class="project-card-body">
@@ -190,6 +295,22 @@ document.addEventListener('DOMContentLoaded', () => {
                             <span class="project-card-meta-label">Equipamentos:</span>
                             <span class="project-card-meta-val">${modQtd} módulos | ${invQtd}x ${escapeHTML(invMod)}</span>
                         </div>
+                        ${solicitacaoNum ? `
+                        <div class="project-card-meta-row" style="background: #f8fafc; padding: 0.2rem 0.4rem; border-radius: 4px; margin: 0.1rem 0;">
+                            <span class="project-card-meta-label">Solicitação Enel:</span>
+                            <span class="project-card-meta-val protocol-badge">#${escapeHTML(solicitacaoNum)}</span>
+                        </div>
+                        ` : ''}
+                        ${solicitacaoLink ? `
+                        <div class="project-card-meta-row">
+                            <span class="project-card-meta-label">Acompanhamento:</span>
+                            <span class="project-card-meta-val">
+                                <a href="${escapeHTML(solicitacaoLink)}" target="_blank" rel="noopener noreferrer" class="link-acompanhamento-card" onclick="event.stopPropagation();" title="Abrir portal de acompanhamento">
+                                    🔗 Acessar Portal Enel ↗
+                                </a>
+                            </span>
+                        </div>
+                        ` : ''}
                         <div class="project-card-meta-row" style="margin-top: 0.2rem; font-size: 0.78rem; opacity: 0.85;">
                             <span class="project-card-meta-label">Última edição:</span>
                             <span>${timeAgo}</span>
@@ -255,7 +376,7 @@ document.addEventListener('DOMContentLoaded', () => {
         autoSaveTimeout = setTimeout(() => {
             const currentData = getFormData();
             const project = ProjectStorage.getById(activeProjectId);
-            
+
             if (project) {
                 // Atualiza nome padrão se o projeto ainda tiver nome provisório e o cliente for digitado
                 let projNome = project.nome;
@@ -654,7 +775,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function triggerDocumentPrint() {
         const project = ProjectStorage.getById(activeProjectId);
         const projName = project ? (project.nome || 'Projeto_Solar') : 'Projeto_Solar';
-        
+
         let docName = 'Diagrama_Unifilar';
         if (activeDocType === 'memorial') docName = 'Memorial_Descritivo';
         if (activeDocType === 'formulario') docName = 'Formulario_Acesso_Enel';
@@ -673,10 +794,10 @@ document.addEventListener('DOMContentLoaded', () => {
     async function exportDirectPDF() {
         const project = ProjectStorage.getById(activeProjectId);
         const projName = project ? (project.nome || 'Projeto_Solar') : 'Projeto_Solar';
-        
+
         let docName = 'Diagrama_Unifilar';
         let isLandscape = false;
-        
+
         if (activeDocType === 'memorial') {
             docName = 'Memorial_Descritivo';
             isLandscape = false;
@@ -718,7 +839,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         showToast(`Gerando PDF "${filename}"... Aguarde.`, 'info');
-        
+
         if (btnSavePdfDocument) {
             btnSavePdfDocument.disabled = true;
             btnSavePdfDocument.innerHTML = '<span class="btn-icon">⏳</span> Gerando...';
@@ -814,7 +935,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Rola para a página/prancha atual e aguarda renderização completa
                 try {
                     pageElem.scrollIntoView({ block: 'start', inline: 'nearest' });
-                } catch(e) {}
+                } catch (e) { }
                 await new Promise(r => setTimeout(r, 200));
 
                 let canvas;
@@ -824,7 +945,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Para diagramas SVG: serialização nativa (muito mais confiável)
                     try {
                         canvas = await svgToCanvas(svgElem, 3);
-                    } catch(svgErr) {
+                    } catch (svgErr) {
                         console.warn('SVG nativo falhou, usando html2canvas como fallback:', svgErr);
                         canvas = await html2canvas(pageElem, {
                             scale: 2, useCORS: true, allowTaint: true,
@@ -888,7 +1009,7 @@ document.addEventListener('DOMContentLoaded', () => {
             triggerDocumentPrint();
         } finally {
             previewContainer.classList.remove('exporting-pdf');
-            try { window.scrollTo(0, 0); } catch(e) {}
+            try { window.scrollTo(0, 0); } catch (e) { }
             if (btnSavePdfDocument) {
                 btnSavePdfDocument.disabled = false;
                 btnSavePdfDocument.innerHTML = '<span class="btn-icon">📄</span> Salvar PDF';
@@ -924,6 +1045,32 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Filtros rápidos por status na listagem
+    if (statusFiltersBar) {
+        statusFiltersBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('.status-filter-btn');
+            if (!btn) return;
+            statusFiltersBar.querySelectorAll('.status-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedStatusFilter = btn.dataset.status || 'all';
+            renderDashboard();
+        });
+    }
+
+    // Botão de teste para abrir link de acompanhamento no navegador
+    if (btnTestSolicitacaoLink) {
+        btnTestSolicitacaoLink.addEventListener('click', () => {
+            const input = document.getElementById('inputSolicitacaoLink');
+            const url = input ? input.value.trim() : '';
+            if (url) {
+                const finalUrl = (url.startsWith('http://') || url.startsWith('https://')) ? url : `https://${url}`;
+                window.open(finalUrl, '_blank', 'noopener,noreferrer');
+            } else {
+                showToast('Informe o link de acompanhamento primeiro.', 'warning');
+            }
+        });
+    }
+
     // =========================================================================
     // HELPERS: TOAST NOTIFICATIONS & ESCAPE
     // =========================================================================
@@ -934,7 +1081,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const toast = document.createElement('div');
         toast.className = `toast ${type}`;
-        
+
         let icon = 'ℹ️';
         if (type === 'success') icon = '✅';
         if (type === 'error') icon = '❌';
@@ -962,7 +1109,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Inicialização da Aplicação
     setupTabs();
     setupImageUploadHandlers();
-    
+
     // Inicializa o armazenamento IndexedDB e atualiza a interface
     if (typeof ProjectStorage.init === 'function') {
         ProjectStorage.init().then(() => {
