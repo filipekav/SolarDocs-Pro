@@ -141,7 +141,7 @@ function gerarFormularioAcesso(data) {
                 </tr>
                 <tr>
                     <td>
-                        <strong>Potência instalada (kW):</strong> ${d.potenciaSistema || ''}
+                        <strong>Potência instalada (kW):</strong> ${d.potenciaSistema || potenciaGeracaoKw}
                     </td>
                     <td>
                         <strong>Tensão de atendimento (V):</strong> ${d.tensaoAtendimento || '220'}

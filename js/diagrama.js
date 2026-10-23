@@ -58,8 +58,17 @@ function gerarPrancha1(d) {
     const modPorString = Number(d.modulosPorString) || 0;
     const totalModulos = strings * modPorString;
 
-    const potInversorKw = Number(d.inversorPotencia || 6000) / 1000;
-    const potTotalUsinaKw = (inversorQtd * potInversorKw).toFixed(1);
+    let rawPotInvStr = String(d.inversorPotencia || 6000).trim();
+    if (rawPotInvStr.includes(',') && rawPotInvStr.includes('.')) {
+        rawPotInvStr = rawPotInvStr.replace(/\./g, '').replace(',', '.');
+    } else if (rawPotInvStr.includes(',')) {
+        rawPotInvStr = rawPotInvStr.replace(',', '.');
+    }
+    const potInvNum = parseFloat(rawPotInvStr) || 6000;
+    const potInversorKw = potInvNum > 100 ? (potInvNum / 1000) : potInvNum;
+    const potInversorKwStr = Number.isInteger(potInversorKw) ? String(potInversorKw) : String(parseFloat(potInversorKw.toFixed(3)));
+    const potTotalUsinaVal = potInversorKw * inversorQtd;
+    const potTotalUsinaKw = Number.isInteger(potTotalUsinaVal) ? String(potTotalUsinaVal) : String(parseFloat(potTotalUsinaVal.toFixed(3)));
 
     const svgW = 1080;
     const startX = 45;
@@ -216,7 +225,7 @@ function gerarPrancha1(d) {
                 <text x="${invX + invW/2}" y="${invY_i + 16}" text-anchor="middle" font-size="9" font-family="Arial" font-weight="bold" fill="#000">${labelInv}</text>
                 <text x="${invX + invW/2}" y="${invY_i + 29}" text-anchor="middle" font-size="9" font-family="Arial" fill="#000">${d.inversorMarca || ''}</text>
                 <text x="${invX + invW/2}" y="${invY_i + 42}" text-anchor="middle" font-size="8" font-family="Arial" fill="#555">${d.inversorModelo || ''}</text>
-                <text x="${invX + invW/2}" y="${invY_i + 56}" text-anchor="middle" font-size="9.5" font-family="Arial" font-weight="bold" fill="#1565c0">${potInversorKw.toFixed(1)} kW</text>
+                <text x="${invX + invW/2}" y="${invY_i + 56}" text-anchor="middle" font-size="9.5" font-family="Arial" font-weight="bold" fill="#1565c0">${potInversorKwStr} kW</text>
             `;
             conexoesInversoresCASVG += `
                 <line x1="${invX + invW}" y1="${caY}" x2="${disjX}" y2="${caY}" stroke="#1976d2" stroke-width="2"/>
@@ -227,7 +236,7 @@ function gerarPrancha1(d) {
                 <line x1="${invX + invW - 12}" y1="${invY_i}" x2="${invX + invW}" y2="${invY_i + 12}" stroke="#1565c0" stroke-width="1.5"/>
                 <text x="${invX + invW/2}" y="${invY_i + 14}" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">${labelInv}</text>
                 <text x="${invX + invW/2}" y="${invY_i + 26}" text-anchor="middle" font-size="8" font-family="Arial" fill="#000">${d.inversorMarca || ''} ${d.inversorModelo || ''}</text>
-                <text x="${invX + invW/2}" y="${invY_i + 38}" text-anchor="middle" font-size="9" font-family="Arial" font-weight="bold" fill="#1565c0">${potInversorKw.toFixed(1)} kW</text>
+                <text x="${invX + invW/2}" y="${invY_i + 38}" text-anchor="middle" font-size="9" font-family="Arial" font-weight="bold" fill="#1565c0">${potInversorKwStr} kW</text>
             `;
             conexoesInversoresCASVG += `
                 <polyline points="${invX + invW},${invCenterY_i} 495,${invCenterY_i} 495,${caY} ${disjX},${caY}" fill="none" stroke="#1976d2" stroke-width="2"/>
@@ -366,7 +375,7 @@ function gerarPrancha1(d) {
 
         <text x="${info2X + 10}" y="${info2Y + 130}" font-size="10" font-family="Arial" font-weight="bold" fill="#333">Inversores Solar Grid-Tie:</text>
         <text x="${info2X + 15}" y="${info2Y + 148}" font-size="9.5" font-family="Arial" fill="#000">01 - Quantidade: <tspan font-weight="bold">${inversorQtd} unidade(s)</tspan> | Marca: ${d.inversorMarca || ''}</text>
-        <text x="${info2X + 15}" y="${info2Y + 164}" font-size="9.5" font-family="Arial" fill="#000">02 - Modelo: ${d.inversorModelo || ''} (${potInversorKw.toFixed(1)} kW cada)</text>
+        <text x="${info2X + 15}" y="${info2Y + 164}" font-size="9.5" font-family="Arial" fill="#000">02 - Modelo: ${d.inversorModelo || ''} (${potInversorKwStr} kW cada)</text>
         <text x="${info2X + 15}" y="${info2Y + 180}" font-size="9.5" font-family="Arial" fill="#000">03 - Potência Total Instalada: <tspan font-weight="bold">${potTotalUsinaKw} kW</tspan> | Eficiência: ${d.inversorEficiencia || ''}%</text>
     `;
 
@@ -387,8 +396,8 @@ function gerarPrancha1(d) {
 
     const svgH = Math.max(900, info2Y + 215 + 25);
     const tituloDiagrama = inversorQtd > 1
-        ? `DIAGRAMA UNIFILAR - USINA SOLAR FOTOVOLTAICA DE ${potTotalUsinaKw}kW (${inversorQtd} INVERSORES DE ${potInversorKw.toFixed(1)}kW)`
-        : `DIAGRAMA UNIFILAR - USINA SOLAR FOTOVOLTAICA DE ${(Number(d.potenciaSistema) || potInversorKw).toFixed(1)}kW`;
+        ? `DIAGRAMA UNIFILAR - USINA SOLAR FOTOVOLTAICA DE ${potTotalUsinaKw}kW (${inversorQtd} INVERSORES DE ${potInversorKwStr}kW)`
+        : `DIAGRAMA UNIFILAR - USINA SOLAR FOTOVOLTAICA DE ${potTotalUsinaKw}kW`;
 
     return `
         <div class="doc-page diagrama-container">

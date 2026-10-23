@@ -164,17 +164,43 @@ function gerarMemorialDescritivo(data) {
     const d = data || {};
     const dataExtenso = formatDateExtenso(d.dataProjeto);
     const clienteNome = (d.clienteNome || '').toUpperCase();
-    const potenciaSistema = d.potenciaSistema || '';
     const capaLogoSrc = d.logoEmpresa || ((typeof ASSETS !== 'undefined' && ASSETS.LOGO_JPEG) ? ASSETS.LOGO_JPEG : 'logo.jpeg');
 
-    // Cálculos de Potência
+    // Cálculos de Potência dos Módulos
     const potenciaModWp = Number(d.moduloPotencia) || 0;
     const qtdModulos = Number(d.moduloQtd) || 0;
     const potenciaTotalModulosKwp = ((potenciaModWp * qtdModulos) / 1000).toFixed(3).replace('.', ',');
 
-    const potenciaInvW = Number(d.inversorPotencia) || 0;
-    const qtdInversores = Number(d.inversorQtd) || 1;
-    const potenciaInversorTotalKw = ((potenciaInvW * qtdInversores) / 1000).toFixed(3).replace('.', ',');
+    let rawPotInvStr = String(d.inversorPotencia || '').trim();
+    if (rawPotInvStr.includes(',') && rawPotInvStr.includes('.')) {
+        rawPotInvStr = rawPotInvStr.replace(/\./g, '').replace(',', '.');
+    } else if (rawPotInvStr.includes(',')) {
+        rawPotInvStr = rawPotInvStr.replace(',', '.');
+    }
+    const potenciaInvRaw = parseFloat(rawPotInvStr) || 0;
+    const potenciaInvKw = potenciaInvRaw > 100 ? (potenciaInvRaw / 1000) : potenciaInvRaw;
+    const potenciaInvKwStr = potenciaInvKw > 0 
+        ? (Number.isInteger(potenciaInvKw) ? String(potenciaInvKw) : String(parseFloat(potenciaInvKw.toFixed(3))).replace('.', ','))
+        : '';
+
+    let rawPotMaxCcStr = String(d.inversorPotMaxCc || '').trim();
+    if (rawPotMaxCcStr.includes(',') && rawPotMaxCcStr.includes('.')) {
+        rawPotMaxCcStr = rawPotMaxCcStr.replace(/\./g, '').replace(',', '.');
+    } else if (rawPotMaxCcStr.includes(',')) {
+        rawPotMaxCcStr = rawPotMaxCcStr.replace(',', '.');
+    }
+    const potMaxCcRaw = parseFloat(rawPotMaxCcStr) || 0;
+    const potMaxCcKw = potMaxCcRaw > 100 ? (potMaxCcRaw / 1000) : potMaxCcRaw;
+    const potMaxCcKwStr = potMaxCcKw > 0
+        ? (Number.isInteger(potMaxCcKw) ? String(potMaxCcKw) : String(parseFloat(potMaxCcKw.toFixed(3))).replace('.', ','))
+        : (d.inversorPotMaxCc || '');
+
+    const qtdInversores = Math.max(1, Number(d.inversorQtd) || 1);
+    const potTotalInversoresVal = potenciaInvKw * qtdInversores;
+    const potenciaInversorTotalKw = potTotalInversoresVal > 0
+        ? (Number.isInteger(potTotalInversoresVal) ? String(potTotalInversoresVal) : String(parseFloat(potTotalInversoresVal.toFixed(3))).replace('.', ','))
+        : '';
+    const potenciaSistema = (d.potenciaSistema && String(d.potenciaSistema).trim()) ? String(d.potenciaSistema).trim() : potenciaInversorTotalKw;
 
     const geracao = getGeracaoMensal(d);
     const totalAnual = geracao.reduce((s, m) => s + (Number(m.valor) || 0), 0);
@@ -364,8 +390,8 @@ function gerarMemorialDescritivo(data) {
                     <table class="memorial-table">
                         <tr><td style="width:60%">MARCA:</td><td><strong>${d.inversorMarca || ''}</strong></td></tr>
                         <tr><td>MODELO:</td><td><strong>${d.inversorModelo || ''}</strong></td></tr>
-                        <tr><td>POTÊNCIA MÁXIMA DA ENTRADA CC (kW):</td><td><strong>${d.inversorPotMaxCc || ''}</strong></td></tr>
-                        <tr><td>POTÊNCIA NOMINAL DO INVERSOR (kW):</td><td><strong>${d.inversorPotencia || ''}</strong></td></tr>
+                        <tr><td>POTÊNCIA MÁXIMA DA ENTRADA CC (kW):</td><td><strong>${potMaxCcKwStr}</strong></td></tr>
+                        <tr><td>POTÊNCIA NOMINAL DO INVERSOR (kW):</td><td><strong>${potenciaInvKwStr}</strong></td></tr>
                         <tr><td>Nº TOTAL DE INVERSORES:</td><td><strong>${d.inversorQtd || ''}</strong></td></tr>
                         <tr><td>POTÊNCIA TOTAL DOS INVERSORES (kW):</td><td><strong>${potenciaInversorTotalKw}</strong></td></tr>
                         <tr><td>CORRENTE CA DO INVERSOR (A):</td><td><strong>${d.inversorINominal || ''}</strong></td></tr>
