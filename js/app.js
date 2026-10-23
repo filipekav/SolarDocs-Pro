@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const searchProjectsInput = document.getElementById('searchProjectsInput');
     const metricTotalProjects = document.getElementById('metricTotalProjects');
     const metricTotalPower = document.getElementById('metricTotalPower');
+    const metricTotalAReceber = document.getElementById('metricTotalAReceber');
+    const metricTotalRecebido = document.getElementById('metricTotalRecebido');
     const projectCountBadge = document.getElementById('projectCountBadge');
     const btnNewProject = document.getElementById('btnNewProject');
     const btnEmptyNewProject = document.getElementById('btnEmptyNewProject');
@@ -38,9 +40,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const activeProjectPowerBadge = document.getElementById('activeProjectPowerBadge');
     const activeProjectUcBadge = document.getElementById('activeProjectUcBadge');
     const activeProjectStatusBadge = document.getElementById('activeProjectStatusBadge');
+    const activeProjectPaymentBadge = document.getElementById('activeProjectPaymentBadge');
     const statusFiltersBar = document.getElementById('statusFiltersBar');
+    const paymentFiltersBar = document.getElementById('paymentFiltersBar');
     const btnTestSolicitacaoLink = document.getElementById('btnTestSolicitacaoLink');
     let selectedStatusFilter = 'all';
+    let selectedPayFilter = 'all';
 
     const autoSaveIndicator = document.getElementById('autoSaveIndicator');
     const btnDiagrama = document.getElementById('btnDiagrama');
@@ -146,6 +151,35 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
+    function getPaymentConfig(status) {
+        const s = String(status || '').trim().toLowerCase();
+        if (s.includes('pago') && !s.includes('parcial') && !s.includes('pendente')) {
+            return {
+                key: 'pago',
+                label: 'Pago',
+                icon: '💰',
+                badgeClass: 'pay-badge-pago',
+                desc: 'Projeto quitado integralmente'
+            };
+        }
+        if (s.includes('parcial')) {
+            return {
+                key: 'parcial',
+                label: 'Parcial',
+                icon: '🟡',
+                badgeClass: 'pay-badge-parcial',
+                desc: 'Pagamento parcial / entrada recebida'
+            };
+        }
+        return {
+            key: 'pendente',
+            label: 'A Pagar',
+            icon: '⏳',
+            badgeClass: 'pay-badge-pendente',
+            desc: 'Pagamento pendente'
+        };
+    }
+
     function updateActiveProjectHeader() {
         const project = ProjectStorage.getById(activeProjectId);
         if (!project) return;
@@ -164,17 +198,41 @@ document.addEventListener('DOMContentLoaded', () => {
             activeProjectStatusBadge.textContent = `${stCfg.icon} ${stCfg.label}`;
             activeProjectStatusBadge.className = `badge badge-status ${stCfg.badgeClass}`;
         }
+
+        const payStatus = project.data?.statusPagamento || 'Pendente';
+        const payCfg = getPaymentConfig(payStatus);
+        if (activeProjectPaymentBadge) {
+            activeProjectPaymentBadge.textContent = `${payCfg.icon} ${payCfg.label}`;
+            activeProjectPaymentBadge.className = `badge badge-payment ${payCfg.badgeClass}`;
+        }
     }
 
     // =========================================================================
     // RENDERIZAÇÃO DO DASHBOARD E CARDS DE PROJETOS
     // =========================================================================
 
+    function parseCurrency(val) {
+        if (!val) return 0;
+        if (typeof val === 'number') return isNaN(val) ? 0 : val;
+        let s = String(val).trim().replace(/[R$\s]/g, '');
+        if (!s) return 0;
+        if (s.includes(',') && s.includes('.')) {
+            s = s.replace(/\./g, '').replace(',', '.');
+        } else if (s.includes(',')) {
+            s = s.replace(',', '.');
+        }
+        const num = parseFloat(s);
+        return isNaN(num) ? 0 : num;
+    }
+
     function renderDashboard() {
         const allProjects = ProjectStorage.getAll();
 
         // Atualiza KPIs e contadores de status do topo
         let totalPower = 0;
+        let totalAReceber = 0;
+        let totalRecebido = 0;
+
         const statusCounts = {
             all: allProjects.length,
             pendente: 0,
@@ -182,6 +240,12 @@ document.addEventListener('DOMContentLoaded', () => {
             aprovado: 0,
             vistoria: 0,
             concluido: 0
+        };
+        const payCounts = {
+            all: allProjects.length,
+            pago: 0,
+            pendente: 0,
+            parcial: 0
         };
 
         allProjects.forEach(p => {
@@ -192,12 +256,33 @@ document.addEventListener('DOMContentLoaded', () => {
             if (statusCounts[stCfg.key] !== undefined) {
                 statusCounts[stCfg.key]++;
             }
+
+            const payCfg = getPaymentConfig(p.data?.statusPagamento || 'Pendente');
+            if (payCounts[payCfg.key] !== undefined) {
+                payCounts[payCfg.key]++;
+            }
+
+            const valor = parseCurrency(p.data?.valorProjeto);
+            if (payCfg.key === 'pago') {
+                totalRecebido += valor;
+            } else if (payCfg.key === 'parcial') {
+                totalAReceber += valor * 0.5;
+                totalRecebido += valor * 0.5;
+            } else {
+                totalAReceber += valor;
+            }
         });
 
         metricTotalProjects.textContent = allProjects.length;
         metricTotalPower.textContent = `${totalPower.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kWp`;
+        if (metricTotalAReceber) {
+            metricTotalAReceber.textContent = totalAReceber.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        if (metricTotalRecebido) {
+            metricTotalRecebido.textContent = totalRecebido.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
 
-        // Atualiza contadores visuais nos botões de filtro
+        // Atualiza contadores visuais nos botões de filtro de processo
         const elCountAll = document.getElementById('countStatusAll');
         if (elCountAll) elCountAll.textContent = statusCounts.all;
         const elCountPendente = document.getElementById('countStatusPendente');
@@ -211,11 +296,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const elCountConcluido = document.getElementById('countStatusConcluido');
         if (elCountConcluido) elCountConcluido.textContent = statusCounts.concluido;
 
+        // Atualiza contadores visuais nos botões de filtro de pagamento
+        const elPayAll = document.getElementById('countPayAll');
+        if (elPayAll) elPayAll.textContent = payCounts.all;
+        const elPayPago = document.getElementById('countPayPago');
+        if (elPayPago) elPayPago.textContent = payCounts.pago;
+        const elPayPendente = document.getElementById('countPayPendente');
+        if (elPayPendente) elPayPendente.textContent = payCounts.pendente;
+        const elPayParcial = document.getElementById('countPayParcial');
+        if (elPayParcial) elPayParcial.textContent = payCounts.parcial;
+
         // Filtragem por busca e por status selecionado
         const query = searchQuery.trim().toLowerCase();
         const filteredProjects = allProjects.filter(p => {
             const stCfg = getStatusConfig(p.data?.statusProjeto || 'Envio Pendente');
             if (selectedStatusFilter !== 'all' && stCfg.key !== selectedStatusFilter) {
+                return false;
+            }
+
+            const payCfg = getPaymentConfig(p.data?.statusPagamento || 'Pendente');
+            if (selectedPayFilter !== 'all' && payCfg.key !== selectedPayFilter) {
                 return false;
             }
 
@@ -227,7 +327,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const pot = String(p.data?.potenciaSistema || '').toLowerCase();
             const solicitacao = String(p.data?.solicitacaoNumero || '').toLowerCase();
             const statusTxt = String(p.data?.statusProjeto || '').toLowerCase();
-            return nome.includes(query) || cliente.includes(query) || cidade.includes(query) || uc.includes(query) || pot.includes(query) || solicitacao.includes(query) || statusTxt.includes(query);
+            const payTxt = String(p.data?.statusPagamento || '').toLowerCase();
+            const valor = String(p.data?.valorProjeto || '').toLowerCase();
+            const forma = String(p.data?.formaPagamento || '').toLowerCase();
+            return nome.includes(query) || cliente.includes(query) || cidade.includes(query) || uc.includes(query) || pot.includes(query) || solicitacao.includes(query) || statusTxt.includes(query) || payTxt.includes(query) || valor.includes(query) || forma.includes(query);
         });
 
         projectCountBadge.textContent = `${filteredProjects.length} ${filteredProjects.length === 1 ? 'projeto' : 'projetos'}`;
@@ -236,8 +339,8 @@ document.addEventListener('DOMContentLoaded', () => {
             projectsGrid.innerHTML = '';
             emptyProjectsState.style.display = 'block';
             const emptyMsg = document.getElementById('emptyStateMessage');
-            if (query || selectedStatusFilter !== 'all') {
-                emptyMsg.textContent = `Nenhum projeto encontrado com os filtros atuais. Tente buscar outros termos ou alterar o filtro de status.`;
+            if (query || selectedStatusFilter !== 'all' || selectedPayFilter !== 'all') {
+                emptyMsg.textContent = `Nenhum projeto encontrado com os filtros atuais. Tente buscar outros termos ou alterar os filtros de status/pagamento.`;
             } else {
                 emptyMsg.textContent = 'Você ainda não possui projetos salvos. Crie um novo projeto ou importe um backup em JSON para começar.';
             }
@@ -257,8 +360,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const invMod = data.inversorModelo || 'Inversor';
             const timeAgo = formatRelativeTime(proj.atualizadoEm);
             const stCfg = getStatusConfig(data.statusProjeto || 'Envio Pendente');
+            const payCfg = getPaymentConfig(data.statusPagamento || 'Pendente');
             const solicitacaoNum = data.solicitacaoNumero ? String(data.solicitacaoNumero).trim() : '';
             const solicitacaoLink = data.solicitacaoLink ? String(data.solicitacaoLink).trim() : '';
+            const valorProjeto = data.valorProjeto ? String(data.valorProjeto).trim() : '';
+            const formaPagamento = data.formaPagamento ? String(data.formaPagamento).trim() : '';
 
             return `
                 <div class="project-card" data-id="${proj.id}">
@@ -270,12 +376,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="project-card-power-badge">⚡ ${pot} kWp</div>
                     </div>
 
-                    <!-- Barra com Badge de Status da Homologação -->
-                    <div class="project-card-status-bar">
-                        <span class="project-card-status-badge ${stCfg.badgeClass}">
-                            <span class="status-dot"></span>
-                            ${stCfg.icon} ${stCfg.label}
-                        </span>
+                    <!-- Barra com Badges Interativos de Status da Homologação e Pagamento -->
+                    <div class="project-card-status-bar" onclick="event.stopPropagation();">
+                        <select class="card-quick-select project-card-status-badge ${stCfg.badgeClass}" data-id="${proj.id}" data-field="statusProjeto" title="Alterar status do processo na concessionária">
+                            <option value="Envio Pendente" ${(data.statusProjeto || 'Envio Pendente') === 'Envio Pendente' ? 'selected' : ''}>⏳ Envio Pendente</option>
+                            <option value="Enviado para Enel" ${data.statusProjeto === 'Enviado para Enel' ? 'selected' : ''}>📤 Enviado para Enel</option>
+                            <option value="Aprovado" ${data.statusProjeto === 'Aprovado' ? 'selected' : ''}>✅ Aprovado</option>
+                            <option value="Vistoria Solicitada" ${data.statusProjeto === 'Vistoria Solicitada' ? 'selected' : ''}>🔍 Vistoria Solicitada</option>
+                            <option value="Concluido" ${data.statusProjeto === 'Concluido' ? 'selected' : ''}>🏆 Concluído</option>
+                        </select>
+                        <select class="card-quick-select project-card-payment-badge ${payCfg.badgeClass}" data-id="${proj.id}" data-field="statusPagamento" title="Alterar status de pagamento do projeto">
+                            <option value="Pendente" ${payCfg.key === 'pendente' ? 'selected' : ''}>⏳ A Pagar</option>
+                            <option value="Parcial" ${payCfg.key === 'parcial' ? 'selected' : ''}>🟡 Parcial</option>
+                            <option value="Pago" ${payCfg.key === 'pago' ? 'selected' : ''}>💰 Pago</option>
+                        </select>
                     </div>
 
                     <div class="project-card-body">
@@ -294,6 +408,22 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="project-card-meta-row">
                             <span class="project-card-meta-label">Equipamentos:</span>
                             <span class="project-card-meta-val">${modQtd} módulos | ${invQtd}x ${escapeHTML(invMod)}</span>
+                        </div>
+                        <div class="project-card-meta-row" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.28rem 0.5rem; border-radius: 4px; margin: 0.15rem 0; display: flex; align-items: center; justify-content: space-between;">
+                            <div>
+                                <span class="project-card-meta-label" style="color: #166534; font-weight: 600;">Financeiro:</span>
+                                <span class="project-card-meta-val" style="font-weight: 700; color: #15803d;">
+                                    ${valorProjeto ? `R$ ${escapeHTML(valorProjeto)}` : '<span style="font-weight: 500; font-size: 0.78rem; color: #166534;">Não definido</span>'} 
+                                    ${formaPagamento ? `<span style="font-weight: 500; font-size: 0.8rem; color: #166534;">(${escapeHTML(formaPagamento)})</span>` : ''}
+                                </span>
+                            </div>
+                            ${payCfg.key !== 'pago' ? `
+                            <button type="button" class="btn-quick-pay" data-action="quick-pay" data-id="${proj.id}" title="Marcar este projeto como Pago agora">
+                                💰 Marcar Pago
+                            </button>
+                            ` : `
+                            <span class="quick-pay-done" title="Projeto Quitado">✓ Quitado</span>
+                            `}
                         </div>
                         ${solicitacaoNum ? `
                         <div class="project-card-meta-row" style="background: #f8fafc; padding: 0.2rem 0.4rem; border-radius: 4px; margin: 0.1rem 0;">
@@ -340,6 +470,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (action === 'open') {
                     openProject(id);
+                } else if (action === 'quick-pay') {
+                    const proj = ProjectStorage.getById(id);
+                    if (proj) {
+                        proj.data = proj.data || {};
+                        proj.data.statusPagamento = 'Pago';
+                        if (!proj.data.dataPagamento) {
+                            proj.data.dataPagamento = new Date().toISOString().split('T')[0];
+                        }
+                        ProjectStorage.save(proj);
+                        renderDashboard();
+                        showToast(`💰 Projeto "${proj.nome}" marcado como Pago!`, 'success');
+                    }
                 } else if (action === 'duplicate') {
                     const copy = ProjectStorage.duplicate(id);
                     if (copy) {
@@ -357,6 +499,27 @@ document.addEventListener('DOMContentLoaded', () => {
                         modalDeleteConfirm.style.display = 'flex';
                     }
                 }
+            });
+        });
+
+        // Listeners para os selects rápidos de status e pagamento dentro dos cards
+        projectsGrid.querySelectorAll('select.card-quick-select').forEach(sel => {
+            sel.addEventListener('click', (e) => e.stopPropagation());
+            sel.addEventListener('change', (e) => {
+                e.stopPropagation();
+                const id = sel.dataset.id;
+                const field = sel.dataset.field;
+                const newVal = sel.value;
+                const proj = ProjectStorage.getById(id);
+                if (!proj) return;
+                proj.data = proj.data || {};
+                proj.data[field] = newVal;
+                if (field === 'statusPagamento' && newVal === 'Pago' && !proj.data.dataPagamento) {
+                    proj.data.dataPagamento = new Date().toISOString().split('T')[0];
+                }
+                ProjectStorage.save(proj);
+                renderDashboard();
+                showToast(`✓ ${field === 'statusPagamento' ? 'Pagamento' : 'Status'} atualizado para "${newVal}"!`, 'success');
             });
         });
     }
@@ -1054,6 +1217,30 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active');
             selectedStatusFilter = btn.dataset.status || 'all';
             renderDashboard();
+        });
+    }
+
+    // Filtros rápidos por status de pagamento na listagem
+    if (paymentFiltersBar) {
+        paymentFiltersBar.addEventListener('click', (e) => {
+            const btn = e.target.closest('.pay-filter-btn');
+            if (!btn) return;
+            paymentFiltersBar.querySelectorAll('.pay-filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            selectedPayFilter = btn.dataset.pay || 'all';
+            renderDashboard();
+        });
+    }
+
+    // Listener imediato no select de pagamento do editor
+    const selectStatusPagamento = document.getElementById('selectStatusPagamento');
+    if (selectStatusPagamento) {
+        selectStatusPagamento.addEventListener('change', () => {
+            const payCfg = getPaymentConfig(selectStatusPagamento.value);
+            if (activeProjectPaymentBadge) {
+                activeProjectPaymentBadge.textContent = `${payCfg.icon} ${payCfg.label}`;
+                activeProjectPaymentBadge.className = `badge badge-payment ${payCfg.badgeClass}`;
+            }
         });
     }
 

@@ -41,8 +41,12 @@
                         <strong class="metric-value highlight" id="metricTotalPower">0 kWp</strong>
                     </div>
                     <div class="metric-card">
-                        <span class="metric-label">Armazenamento</span>
-                        <strong class="metric-value"><span class="status-dot"></span>Navegador Local</strong>
+                        <span class="metric-label">💰 A Receber</span>
+                        <strong class="metric-value highlight-warn" id="metricTotalAReceber">R$ 0,00</strong>
+                    </div>
+                    <div class="metric-card">
+                        <span class="metric-label">✅ Total Recebido</span>
+                        <strong class="metric-value highlight-success" id="metricTotalRecebido">R$ 0,00</strong>
                     </div>
                 </div>
             </div>
@@ -73,21 +77,37 @@
                     </button>
                 </div>
 
-                <!-- Filtros Rápidos por Status -->
+                <!-- Filtros Rápidos por Status de Processo e Pagamento -->
                 <div class="status-filters-container">
-                    <div class="status-filters-bar" id="statusFiltersBar">
-                        <button type="button" class="status-filter-btn active" data-status="all">Todos <span
-                                class="filter-count" id="countStatusAll">0</span></button>
-                        <button type="button" class="status-filter-btn" data-status="pendente">⏳ Envio Pendente <span
-                                class="filter-count" id="countStatusPendente">0</span></button>
-                        <button type="button" class="status-filter-btn" data-status="enviado">📤 Enviado para Enel <span
-                                class="filter-count" id="countStatusEnviado">0</span></button>
-                        <button type="button" class="status-filter-btn" data-status="aprovado">✅ Aprovado <span
-                                class="filter-count" id="countStatusAprovado">0</span></button>
-                        <button type="button" class="status-filter-btn" data-status="vistoria">🔍 Vistoria Solicitada
-                            <span class="filter-count" id="countStatusVistoria">0</span></button>
-                        <button type="button" class="status-filter-btn" data-status="concluido">🏆 Concluído <span
-                                class="filter-count" id="countStatusConcluido">0</span></button>
+                    <div class="filters-row">
+                        <span class="filter-group-label">Processo:</span>
+                        <div class="status-filters-bar" id="statusFiltersBar">
+                            <button type="button" class="status-filter-btn active" data-status="all">Todos <span
+                                    class="filter-count" id="countStatusAll">0</span></button>
+                            <button type="button" class="status-filter-btn" data-status="pendente">⏳ Envio Pendente <span
+                                    class="filter-count" id="countStatusPendente">0</span></button>
+                            <button type="button" class="status-filter-btn" data-status="enviado">📤 Enviado para Enel <span
+                                    class="filter-count" id="countStatusEnviado">0</span></button>
+                            <button type="button" class="status-filter-btn" data-status="aprovado">✅ Aprovado <span
+                                    class="filter-count" id="countStatusAprovado">0</span></button>
+                            <button type="button" class="status-filter-btn" data-status="vistoria">🔍 Vistoria <span
+                                    class="filter-count" id="countStatusVistoria">0</span></button>
+                            <button type="button" class="status-filter-btn" data-status="concluido">🏆 Concluído <span
+                                    class="filter-count" id="countStatusConcluido">0</span></button>
+                        </div>
+                    </div>
+                    <div class="filters-row payment-filters-row">
+                        <span class="filter-group-label">Pagamento:</span>
+                        <div class="payment-filters-bar" id="paymentFiltersBar">
+                            <button type="button" class="pay-filter-btn active" data-pay="all">Todos Pagamentos <span
+                                    class="filter-count" id="countPayAll">0</span></button>
+                            <button type="button" class="pay-filter-btn" data-pay="pago">💰 Pagos <span
+                                    class="filter-count" id="countPayPago">0</span></button>
+                            <button type="button" class="pay-filter-btn" data-pay="pendente">⏳ A Pagar <span
+                                    class="filter-count" id="countPayPendente">0</span></button>
+                            <button type="button" class="pay-filter-btn" data-pay="parcial">🟡 Parcial <span
+                                    class="filter-count" id="countPayParcial">0</span></button>
+                        </div>
                     </div>
                 </div>
             </section>
@@ -135,6 +155,7 @@
                             <span class="badge badge-power" id="activeProjectPowerBadge">0 kWp</span>
                             <span class="badge badge-uc" id="activeProjectUcBadge">UC: ---</span>
                             <span class="badge badge-status" id="activeProjectStatusBadge">⏳ Envio Pendente</span>
+                            <span class="badge badge-payment" id="activeProjectPaymentBadge">⏳ A Pagar</span>
                             <span class="badge badge-save" id="autoSaveIndicator">✓ Salvo no navegador</span>
                         </div>
                     </div>
@@ -158,7 +179,7 @@
                     <button class="tab-btn active" data-tab="cliente">Cliente / UC</button>
                     <button class="tab-btn" data-tab="sistema">Sistema / Painéis</button>
                     <button class="tab-btn" data-tab="empresa">Empresa / Técnico</button>
-                    <button class="tab-btn" data-tab="acompanhamento">Acompanhamento / Enel</button>
+                    <button class="tab-btn" data-tab="acompanhamento">Acompanhamento & Financeiro</button>
                 </div>
 
                 <form id="docForm">
@@ -545,7 +566,7 @@
                         </div>
                     </div>
 
-                    <!-- Aba Acompanhamento -->
+                    <!-- Aba Acompanhamento e Financeiro -->
                     <div class="tab-content" id="acompanhamento">
                         <h2>Acompanhamento e Homologação na Concessionária (ENEL)</h2>
                         <p class="tab-intro-text">Controle o estágio da homologação do projeto, número de protocolo e
@@ -587,8 +608,43 @@
                             </label>
 
                             <label class="full-width">Observações do Processo / Pendências
-                                <textarea name="solicitacaoObs" id="inputSolicitacaoObs" rows="3"
+                                <textarea name="solicitacaoObs" id="inputSolicitacaoObs" rows="2"
                                     placeholder="Ex: Parecer emitido em 20/10 com prazo de vistoria até 05/11. Pendente apenas termo de acordo assinado..."></textarea>
+                            </label>
+
+                            <!-- SEÇÃO DE CONTROLE FINANCEIRO / PAGAMENTO (SEPARADO) -->
+                            <h3 class="full-width" style="margin-top: 1.5rem; display: flex; align-items: center; gap: 0.5rem; color: #1e293b; padding-top: 1.25rem; border-top: 1px solid #e2e8f0;">
+                                <span>💰</span> Controle Financeiro / Pagamento do Projeto
+                            </h3>
+                            <p class="full-width" style="margin: -0.3rem 0 0.8rem; font-size: 0.84rem; color: #64748b;">
+                                Controle de forma independente se o projeto já foi pago (pode ser pago antes de ser enviado, na aprovação ou após conclusão).
+                            </p>
+
+                            <label class="full-width">Status do Pagamento
+                                <select name="statusPagamento" id="selectStatusPagamento" class="select-status-custom">
+                                    <option value="Pendente" selected>⏳ Pagamento Pendente (Aguardando recebimento)</option>
+                                    <option value="Parcial">🟡 Pagamento Parcial (Entrada / Sinal recebido)</option>
+                                    <option value="Pago">💰 Pago (Projeto quitado integralmente)</option>
+                                </select>
+                            </label>
+
+                            <label>Valor do Projeto (R$)
+                                <input type="text" name="valorProjeto" id="inputValorProjeto"
+                                    placeholder="Ex: 800,00 ou 1.500,00">
+                            </label>
+
+                            <label>Data do Pagamento
+                                <input type="date" name="dataPagamento" id="inputDataPagamento">
+                            </label>
+
+                            <label>Forma de Pagamento
+                                <input type="text" name="formaPagamento" id="inputFormaPagamento"
+                                    placeholder="Ex: PIX, Transferência, Boleto, Cartão">
+                            </label>
+
+                            <label class="full-width">Observações Financeiras / Condições
+                                <textarea name="obsPagamento" id="inputObsPagamento" rows="2"
+                                    placeholder="Ex: 50% de entrada no aceite e 50% na aprovação do parecer de acesso..."></textarea>
                             </label>
                         </div>
                     </div>

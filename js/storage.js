@@ -102,6 +102,12 @@ const DEFAULT_PROJECT_TEMPLATE = {
     solicitacaoLink: "",
     solicitacaoData: "",
     solicitacaoObs: "",
+    // Controle Financeiro e Pagamento
+    statusPagamento: "Pendente",
+    valorProjeto: "",
+    dataPagamento: "",
+    formaPagamento: "",
+    obsPagamento: "",
     // Campos de Imagens & Anexos (Base64 Otimizado)
     logoEmpresa: null,
     imgCroquiLocalizacao: null,
