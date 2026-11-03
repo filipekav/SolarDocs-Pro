@@ -236,6 +236,20 @@
                                     <option value="Comum">Comum</option>
                                 </select>
                             </label>
+                            <label>Modelo do Formulário de Acesso
+                                <select name="modeloFormulario" id="selectModeloFormulario">
+                                    <option value="auto" selected>Automático (Potência do Inversor)</option>
+                                    <option value="ate_10kw">Até 10 kW (Anexo 3.A REN 956)</option>
+                                    <option value="superior_10kw">Superior a 10 kW (Microgeração > 10kW)</option>
+                                </select>
+                            </label>
+                            <label>Tipo de Solicitação (Formulário > 10kW)
+                                <select name="tipoSolicitacao" id="selectTipoSolicitacao">
+                                    <option value="existente_sem_aumento" selected>Conexão em UC Existente SEM Aumento de Potência</option>
+                                    <option value="nova_uc">Ligação de Nova UC com Geração Distribuída</option>
+                                    <option value="existente_com_aumento">Conexão em UC Existente COM Aumento de Potência</option>
+                                </select>
+                            </label>
                         </div>
                     </div>
 
@@ -656,7 +670,10 @@
 
             <section class="preview-section">
                 <div class="preview-header">
-                    <h2>Pré-visualização</h2>
+                    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                        <h2>Pré-visualização</h2>
+                        <span id="formularioModeloBadge" class="badge-form-model" style="display: none;"></span>
+                    </div>
                     <div class="doc-selector-buttons">
                         <button class="btn btn-primary" id="btnDiagrama">Diagrama Unifilar</button>
                         <button class="btn btn-secondary" id="btnMemorial">Memorial Descritivo</button>

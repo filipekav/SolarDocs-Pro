@@ -31,6 +31,8 @@ const DEFAULT_PROJECT_TEMPLATE = {
     disjuntorEntrada: "32",
     tipoRamal: "Aéreo",
     tipoMedidor: "Bidirecional",
+    modeloFormulario: "auto",
+    tipoSolicitacao: "existente_sem_aumento",
     potenciaSistema: "6",
     tensaoGeracao: "220",
     tipoFonte: "Solar Fotovoltaica",

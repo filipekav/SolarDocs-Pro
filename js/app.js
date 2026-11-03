@@ -735,15 +735,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = getFormData();
         updateActiveDocButtons();
 
+        const badgeForm = document.getElementById('formularioModeloBadge');
+
         if (activeDocType === 'memorial') {
+            if (badgeForm) badgeForm.style.display = 'none';
             if (typeof gerarMemorialDescritivo === 'function') {
                 renderDocument(gerarMemorialDescritivo(data));
             }
         } else if (activeDocType === 'formulario') {
+            if (badgeForm && typeof isFormularioSuperior10kW === 'function' && typeof calcularPotenciaNominalInversor === 'function') {
+                const calc = calcularPotenciaNominalInversor(data);
+                const isSup = isFormularioSuperior10kW(data, calc);
+                badgeForm.style.display = 'inline-flex';
+                badgeForm.className = `badge-form-model ${isSup ? 'badge-form-sup' : 'badge-form-sub'}`;
+                badgeForm.innerHTML = isSup 
+                    ? `⚡ Modelo: Superior a 10 kW (${calc.totalKwStr} kW)`
+                    : `📋 Modelo: Até 10 kW (${calc.totalKwStr} kW)`;
+            }
             if (typeof gerarFormularioAcesso === 'function') {
                 renderDocument(gerarFormularioAcesso(data));
             }
         } else {
+            if (badgeForm) badgeForm.style.display = 'none';
             // Visão Diagrama Elétrico (Suporta Pranchas 01 a 06)
             let contentHTML = '';
 
@@ -941,7 +954,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         let docName = 'Diagrama_Unifilar';
         if (activeDocType === 'memorial') docName = 'Memorial_Descritivo';
-        if (activeDocType === 'formulario') docName = 'Formulario_Acesso_Enel';
+        if (activeDocType === 'formulario') {
+            const currentData = getFormData();
+            const isSup = typeof isFormularioSuperior10kW === 'function' ? isFormularioSuperior10kW(currentData) : false;
+            docName = isSup ? 'Formulario_Acesso_Superior_10kW' : 'Formulario_Acesso_Ate_10kW';
+        }
 
         const originalTitle = document.title;
         const printTitle = `${projName} - ${docName}`.replace(/[/\\?%*:|"<>]/g, '_');
@@ -965,7 +982,9 @@ document.addEventListener('DOMContentLoaded', () => {
             docName = 'Memorial_Descritivo';
             isLandscape = false;
         } else if (activeDocType === 'formulario') {
-            docName = 'Formulario_Acesso_Enel';
+            const currentData = getFormData();
+            const isSup = typeof isFormularioSuperior10kW === 'function' ? isFormularioSuperior10kW(currentData) : false;
+            docName = isSup ? 'Formulario_Acesso_Superior_10kW' : 'Formulario_Acesso_Ate_10kW';
             isLandscape = false;
         } else {
             docName = 'Diagrama_Unifilar';

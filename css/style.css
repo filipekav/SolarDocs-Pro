@@ -1372,6 +1372,117 @@ select:focus {
 }
 
 /* ==========================================================================
+   ESTILOS ESPECÍFICOS PARA FORMULÁRIO SUPERIOR A 10kW
+   ========================================================================== */
+
+.enel-section-banner-gray {
+    background-color: #d9d9d9;
+    color: #000;
+    font-weight: bold;
+    font-size: 7.4pt;
+    padding: 2.5px 6px;
+    text-align: center;
+    border: 1.5px solid #000;
+    border-bottom: none;
+    margin-top: 3px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+}
+
+.sec-title-centered {
+    display: block;
+    width: 100%;
+    text-align: center;
+}
+
+.enel-docs-box-superior {
+    border: 1.5px solid #000;
+    padding: 3px 6px;
+    font-size: 6.2pt;
+    line-height: 1.25;
+    margin-bottom: 2px;
+}
+
+.enel-doc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5px;
+    gap: 8px;
+}
+
+.enel-doc-text {
+    flex: 1;
+    text-align: justify;
+}
+
+.chk-box-sq {
+    display: inline-block;
+    width: 9.5px;
+    height: 9.5px;
+    border: 1px solid #000;
+    flex-shrink: 0;
+    background: #fff;
+    box-sizing: border-box;
+}
+
+.enel-link-aneel {
+    text-decoration: underline;
+    color: #0044cc;
+}
+
+.enel-signature-block-3col {
+    margin-top: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 10px;
+    gap: 15px;
+}
+
+.sig-col-3 {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    text-align: center;
+}
+
+.sig-val-text {
+    font-size: 7.5pt;
+    font-weight: bold;
+    margin-bottom: 2px;
+    min-height: 12px;
+}
+
+/* Badges informativos de modelo do formulário */
+.badge-form-model {
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 0.2rem 0.55rem;
+    border-radius: var(--radius-sm);
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    transition: all 0.2s ease;
+}
+
+.badge-form-sup {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.badge-form-sub {
+    background: #eff6ff;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+
+/* ==========================================================================
    MEMORIAL DESCRITIVO (12 PÁGINAS A4)
    ========================================================================== */
 
@@ -2043,6 +2154,26 @@ select:focus {
     .enel-docs-box {
         font-size: 5.5pt;
         padding: 2px 4px;
+    }
+
+    .enel-section-banner-gray {
+        font-size: 6.8pt;
+        padding: 2px 4px;
+    }
+
+    .enel-docs-box-superior {
+        font-size: 5.5pt;
+        padding: 2px 4px;
+    }
+
+    .enel-signature-block-3col {
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: flex-end;
+        gap: 0.5rem;
+        margin-top: 15px;
+        padding: 0 4px;
     }
 
     .enel-signature-block {
