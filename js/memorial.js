@@ -30,9 +30,11 @@ function getFooterHtml(pageNum) {
 }
 
 /**
- * Renderiza uma imagem customizada ou um placeholder interativo para o Memorial Descritivo
+ * Renderiza uma imagem customizada ou um placeholder interativo para o Memorial Descritivo.
+ * Se defaultSvg for fornecido e não houver imagem customizada, exibe o SVG padrão garantindo
+ * renderização gráfica completa na tela e na impressão/PDF.
  */
-function renderMemorialImage(fieldName, imgData, placeholderText, heightPx, icon = '📷') {
+function renderMemorialImage(fieldName, imgData, placeholderText, heightPx, icon = '📷', defaultSvg = null) {
     if (imgData && typeof imgData === 'string' && imgData.startsWith('data:image')) {
         return `
             <div class="memorial-img-wrapper has-image" data-field="${fieldName}">
@@ -40,6 +42,19 @@ function renderMemorialImage(fieldName, imgData, placeholderText, heightPx, icon
                     <img src="${imgData}" alt="${placeholderText}" class="memorial-custom-img" style="max-height: ${heightPx}px;">
                     <div class="img-hover-overlay">
                         <span class="overlay-text">🔄 Clique para alterar ou remover</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    if (defaultSvg) {
+        return `
+            <div class="memorial-img-wrapper has-default-svg" data-field="${fieldName}" title="Clique ou arraste uma foto para substituir">
+                <div class="img-preview-frame" style="min-height: ${heightPx}px; display: flex; align-items: center; justify-content: center; position: relative;">
+                    ${defaultSvg}
+                    <div class="img-hover-overlay">
+                        <span class="overlay-text">📁 Clique ou arraste uma foto para substituir</span>
                     </div>
                 </div>
             </div>
@@ -160,6 +175,89 @@ function gerarPlacaSinalizacaoSVG() {
     `;
 }
 
+function gerarPadraoMedicaoSVG() {
+    return `
+        <div style="text-align: center; margin: 6px 0;">
+            <svg viewBox="0 0 540 280" width="460" height="235" xmlns="http://www.w3.org/2000/svg" style="display:inline-block; vertical-align:middle; background:#fff; border: 1px solid #ccc; border-radius: 4px;">
+                <!-- Título do Desenho -->
+                <text x="270" y="20" text-anchor="middle" font-size="11" font-family="Arial" font-weight="bold" fill="#000">DESENHO 03 - PADRÃO DE MEDIÇÃO EM BAIXA TENSÃO (ENEL CE)</text>
+                
+                <!-- Solo / Piso Acabado -->
+                <line x1="30" y1="230" x2="510" y2="230" stroke="#795548" stroke-width="2.5"/>
+                <line x1="30" y1="234" x2="510" y2="234" stroke="#8d6e63" stroke-width="1" stroke-dasharray="4,3"/>
+                <text x="495" y="225" text-anchor="end" font-size="8" font-family="Arial" fill="#555">Piso Acabado / Calçada</text>
+
+                <!-- Poste / Mureta -->
+                <rect x="80" y="35" width="24" height="195" fill="#e0e0e0" stroke="#424242" stroke-width="1.5"/>
+                <text x="70" y="130" text-anchor="middle" font-size="8" font-family="Arial" fill="#424242" transform="rotate(-90 70 130)">Poste / Mureta</text>
+
+                <!-- Cabeçote / Pingadeira no Topo -->
+                <path d="M 92 35 L 92 28 Q 92 24 100 24 L 108 24 L 108 30 L 102 30 Q 98 30 98 35 Z" fill="#757575" stroke="#333" stroke-width="1"/>
+                <path d="M 120 22 Q 110 26 104 26" fill="none" stroke="#d32f2f" stroke-width="1.8"/> <!-- Ramal Fase -->
+                <path d="M 120 26 Q 110 30 104 30" fill="none" stroke="#1976d2" stroke-width="1.8"/> <!-- Ramal Neutro -->
+                <text x="125" y="24" font-size="7.5" font-family="Arial" fill="#d32f2f" font-weight="bold">Ramal de Entrada Enel</text>
+
+                <!-- Eletroduto de Entrada Descendo -->
+                <line x1="98" y1="35" x2="98" y2="95" stroke="#616161" stroke-width="3"/>
+                <path d="M 98 95 L 98 105 L 140 105" fill="none" stroke="#616161" stroke-width="3"/>
+
+                <!-- Caixa de Medição (Visor para rua) -->
+                <rect x="140" y="80" width="85" height="100" fill="#f5f5f5" stroke="#1565c0" stroke-width="2" rx="3"/>
+                <rect x="150" y="90" width="65" height="42" fill="#e3f2fd" stroke="#1976d2" stroke-width="1.2" rx="2"/>
+                <!-- Visor / Medidor -->
+                <circle cx="182" cy="111" r="14" fill="#ffffff" stroke="#333" stroke-width="1"/>
+                <text x="182" y="114" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="#000">kWh</text>
+                <text x="182" y="128" text-anchor="middle" font-size="6" font-family="Arial" fill="#1565c0">Medidor Bidirecional</text>
+                
+                <!-- Disjuntor da Medição -->
+                <rect x="167" y="142" width="30" height="24" fill="#fff" stroke="#333" stroke-width="1.2"/>
+                <text x="182" y="157" text-anchor="middle" font-size="7" font-family="Arial" font-weight="bold" fill="#000">Disjuntor</text>
+                <text x="140" y="74" font-size="8" font-family="Arial" font-weight="bold" fill="#1565c0">Caixa de Medição (Policarbonato)</text>
+
+                <!-- Placa de Sinalização Instalada no Padrão -->
+                <rect x="235" y="100" width="70" height="45" fill="#ffeb3b" stroke="#000" stroke-width="1.5" rx="3"/>
+                <rect x="238" y="103" width="64" height="12" fill="#000" rx="1"/>
+                <text x="270" y="112" text-anchor="middle" font-size="6.5" font-family="Arial" font-weight="bold" fill="#ffeb3b">CUIDADO</text>
+                <text x="270" y="125" text-anchor="middle" font-size="5" font-family="Arial" font-weight="bold" fill="#000">GERAÇÃO PRÓPRIA</text>
+                <text x="270" y="135" text-anchor="middle" font-size="4.5" font-family="Arial" fill="#000">RISCO DE CHOQUE</text>
+                <!-- Linha apontando a placa instalada ao lado da caixa -->
+                <line x1="225" y1="122" x2="235" y2="122" stroke="#f57f17" stroke-width="1.2" stroke-dasharray="2,2"/>
+                <text x="235" y="93" font-size="7.5" font-family="Arial" font-weight="bold" fill="#d50000">Placa de Advertência</text>
+                <text x="235" y="157" font-size="6.5" font-family="Arial" fill="#555">(Fixada ao lado do visor)</text>
+
+                <!-- Saída para Carga / QGBT -->
+                <path d="M 182 180 L 182 205 L 340 205" fill="none" stroke="#616161" stroke-width="3"/>
+                <text x="345" y="208" font-size="7.5" font-family="Arial" font-weight="bold" fill="#333">Saída para QGBT / Cargas →</text>
+
+                <!-- Aterramento descendo -->
+                <path d="M 197 180 L 197 220 L 220 220 L 220 248" fill="none" stroke="#2e7d32" stroke-width="2"/>
+                <!-- Caixa de Inspeção de Aterramento no Solo -->
+                <rect x="205" y="230" width="30" height="24" fill="#cfd8dc" stroke="#37474f" stroke-width="1.2"/>
+                <circle cx="220" cy="242" r="5" fill="#fff" stroke="#2e7d32" stroke-width="1.2"/>
+                <line x1="220" y1="242" x2="220" y2="275" stroke="#bf360c" stroke-width="3"/> <!-- Haste de Aterramento -->
+                <text x="242" y="244" font-size="7" font-family="Arial" font-weight="bold" fill="#2e7d32">Caixa de Inspeção</text>
+                <text x="228" y="268" font-size="6.5" font-family="Arial" fill="#bf360c">Haste Cobreada 2,40m</text>
+
+                <!-- Cotas Técnicas -->
+                <line x1="125" y1="130" x2="125" y2="230" stroke="#757575" stroke-width="1"/>
+                <line x1="120" y1="130" x2="130" y2="130" stroke="#757575" stroke-width="1"/>
+                <line x1="120" y1="230" x2="130" y2="230" stroke="#757575" stroke-width="1"/>
+                <text x="118" y="180" text-anchor="end" font-size="7.5" font-family="Arial" fill="#555">1,60 m</text>
+
+                <!-- Notas Normativas Enel -->
+                <rect x="340" y="45" width="185" height="120" fill="#fafafa" stroke="#bbb" stroke-width="0.8" rx="2"/>
+                <text x="350" y="62" font-size="8" font-family="Arial" font-weight="bold" fill="#000">NOTAS TÉCNICAS (ENEL CE):</text>
+                <text x="350" y="78" font-size="7" font-family="Arial" fill="#333">1. Conforme CNC-OMBR-MAT-18-0122-EDBR.</text>
+                <text x="350" y="93" font-size="7" font-family="Arial" fill="#333">2. Caixa em policarbonato com visor voltado</text>
+                <text x="350" y="105" font-size="7" font-family="Arial" fill="#333">&nbsp;&nbsp;&nbsp;&nbsp;para a via pública (acesso livre).</text>
+                <text x="350" y="120" font-size="7" font-family="Arial" fill="#333">3. Placa de advertência de geração própria</text>
+                <text x="350" y="132" font-size="7" font-family="Arial" fill="#333">&nbsp;&nbsp;&nbsp;&nbsp;indispensável e indelével.</text>
+                <text x="350" y="147" font-size="7" font-family="Arial" fill="#333">4. Aterramento exclusivo conforme NBR 5410.</text>
+            </svg>
+        </div>
+    `;
+}
+
 function gerarMemorialDescritivo(data) {
     const d = data || {};
     const dataExtenso = formatDateExtenso(d.dataProjeto);
@@ -209,6 +307,57 @@ function gerarMemorialDescritivo(data) {
     const vocModulo = Number(d.moduloVoc) || 48.10;
     const vocTotalString = (vocModulo * modulosPorString).toFixed(2).replace('.', ',');
 
+    // Loop de strings e capacidade de condução de corrente para a Tabela 6
+    const numStrings = Math.max(1, parseInt(d.stringsQtd, 10) || (qtdInversores * Math.max(1, parseInt(d.stringsPorInversor, 10) || 1)));
+    const capCondCC = (typeof getCapacidadeConducaoNBR5410 === 'function') ? getCapacidadeConducaoNBR5410(d.caboCCPos || '4,0') : '32,0';
+    const capCondCA = (typeof getCapacidadeConducaoNBR5410 === 'function') ? getCapacidadeConducaoNBR5410(d.caboCAFase || '4.0') : '32,0';
+    const tensaoCircuitoCA = (d.inversorVSaida || d.tensaoGeracao || d.tensaoAtendimento || '220').toString().replace(/V$/i, '').trim();
+
+    // Determina a polaridade dos disjuntores da proteção CA conforme o tipo de saída do inversor / rede
+    let polaridadeDisjuntor = 'monopolar';
+    const tipoSaidaNorm = (d.inversorTipoSaida || d.tipoConexao || 'monofasica').toLowerCase();
+    if (tipoSaidaNorm.includes('tri')) {
+        polaridadeDisjuntor = 'tripolar';
+    } else if (tipoSaidaNorm.includes('bi')) {
+        polaridadeDisjuntor = 'bipolar';
+    } else {
+        polaridadeDisjuntor = 'monopolar';
+    }
+
+    let rowsProtecaoCA = '';
+    for (let i = 1; i <= qtdInversores; i++) {
+        const labelInv = qtdInversores > 1 ? `#Inversor ${i}` : '#Inversor 1';
+        const dpsPadrao = polaridadeDisjuntor === 'tripolar'
+            ? '04 DPS Classe II, tensão nominal de 275 VCA e corrente de descarga nominal/máxima de 20/40 kA por polo (3F+1N).'
+            : (polaridadeDisjuntor === 'bipolar'
+                ? '03 DPS Classe II, tensão nominal de 275 VCA e corrente de descarga nominal/máxima de 20/40 kA por polo (2F+1N).'
+                : '02 DPS Classe II, tensão nominal de 275 VCA e corrente de descarga nominal/máxima de 20/40 kA por polo (1F+1N).');
+        rowsProtecaoCA += `
+            <tr>
+                <td><strong>${labelInv}</strong></td>
+                <td>01 disjuntor ${polaridadeDisjuntor} de ${d.disjuntorCA || '32'} A e curva característica tipo ${(d.curvaDisjuntorCA || 'C').toUpperCase()}.</td>
+                <td>${d.dpsCA || dpsPadrao}</td>
+            </tr>
+        `;
+    }
+
+    let rowsStringsCC = '';
+    for (let s = 1; s <= numStrings; s++) {
+        rowsStringsCC += `
+            <tr>
+                <td>STRING ${s}</td>
+                <td>CC 1,8 kV</td>
+                <td>${d.moduloIsc || '17,50'}</td>
+                <td>${vocTotalString}</td>
+                <td>Cu-Sn, HEPR+XLPE, UV, 120º, 0,6/1,8 kVCC</td>
+                <td>${d.caboCCPos || '4,0'}</td>
+                <td>${capCondCC}</td>
+                <td>${d.comprCC || '25,0'}</td>
+                <td>${d.quedaCC || '0,76'}</td>
+            </tr>
+        `;
+    }
+
     return `
         <div class="memorial-document">
             <!-- PÁGINA 1: CAPA -->
@@ -221,7 +370,7 @@ function gerarMemorialDescritivo(data) {
                     </div>
 
                     <div class="capa-titulo">
-                        MEMORIAL DESCRITIVO DO SISTEMA DE MICROGERAÇÃO SOLAR FOTOVOLTAICA, ${clienteNome || '____________________'}, DE ${potenciaSistema || '___'}kW DE POTÊNCIA INSTALADA CONECTADA A REDE DE BAIXA TENSÃO(BT)
+                        MEMORIAL DESCRITIVO DO SISTEMA DE MICROGERAÇÃO SOLAR FOTOVOLTAICA, ${clienteNome || '____________________'}, DE ${potenciaInversorTotalKw || '___'} kW DE POTÊNCIA INSTALADA CONECTADA A REDE DE BAIXA TENSÃO(BT)
                     </div>
 
                     <div class="capa-rodape">
@@ -268,7 +417,7 @@ function gerarMemorialDescritivo(data) {
                 ${getHeaderHtml(3, d)}
                 <div class="memorial-body">
                     <h2>1. OBJETIVOS:</h2>
-                    <p>Revisão da instalação de uma usina solar fotovoltaica conectada à <u>rede ${(d.tipoConexao || 'monofasica').toLowerCase()}</u> de BT da ENEL – CE de <u>${potenciaSistema || '___'} kW</u> de potência instalada. Projeto revisado pelo tecnico <u>${d.tecnicoNome || '___'}</u>, com Registro Nacional: (CFT/CRT): <u>${d.tecnicoCpf || '___'}</u>, Número do TRT:<u>${d.tecnicoRegistro || '___'}</u> , para a empresa <u>${d.empresaNome || 'Nova Energy Ltda'}</u>, CNPJ:<u>${d.empresaCnpj || '___'}</u> situada na <u>${d.empresaEndereco || '___'}</u>.</p>
+                    <p>Revisão da instalação de uma usina solar fotovoltaica conectada à <u>rede ${(d.tipoConexao || 'monofasica').toLowerCase()}</u> de BT da ENEL – CE de <u>${potenciaInversorTotalKw || '___'} kW</u> de potência instalada. Projeto revisado pelo tecnico <u>${d.tecnicoNome || '___'}</u>, com Registro Nacional: (CFT/CRT): <u>${d.tecnicoCpf || '___'}</u>, Número do TRT:<u>${d.tecnicoRegistro || '___'}</u> , para a empresa <u>${d.empresaNome || 'Nova Energy Ltda'}</u>, CNPJ:<u>${d.empresaCnpj || '___'}</u> situada na <u>${d.empresaEndereco || '___'}</u>.</p>
 
                     <h2>2. DESCRIÇÃO GERAL DO CONSUMIDOR:</h2>
                     <p>A tabela 01 possuem os dados do cliente onde será instalada a usina solar fotovoltaica.</p>
@@ -356,7 +505,7 @@ function gerarMemorialDescritivo(data) {
                         <li>− ABNT NBR 16612:2020 – Cabos de potência para sistemas fotovoltaicos, não halogenados, isolados, com cobertura, para tensão até 1,8 kV C.C. entre condutores – Requisitos de desempenho.</li>
                     </ul>
 
-                    <p>A usina instalada terá uma potência instalada de <u>${potenciaSistema || '___'}kW, com os módulos fixados paralelamente ao telhado cerâmico</u>. Nos tópicos seguintes serão descritos os componentes que compõe a usina solar.</p>
+                    <p>A usina instalada terá uma potência instalada de geração de <u>${potenciaInversorTotalKw || '___'} kW (composta por ${qtdModulos} módulos fotovoltaicos de ${potenciaModWp} Wp totalizando ${potenciaTotalModulosKwp} kWp e ${qtdInversores} inversor(es) de ${potenciaInvKwStr} kW), com os módulos fixados paralelamente ao telhado cerâmico</u>. Nos tópicos seguintes serão descritos os componentes que compõe a usina solar.</p>
                 </div>
                 ${getFooterHtml(5)}
             </div>
@@ -458,16 +607,12 @@ function gerarMemorialDescritivo(data) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><strong>#Inversor 1</strong></td>
-                                <td>01 disjuntor monopolar de ${d.disjuntorCA || '32'} A e curva característica tipo ${d.curvaDisjuntorCA || 'c'}.</td>
-                                <td>${d.dpsCA || '02 DPS ClasseII,tensão nominal de 275 VCA e corrente de descarga nominal/máxima de 20/40 kA por polo,com visualização de vida útil na partefrontalou através de contato auxiliar (1F+1N).'}</td>
-                            </tr>
+                            ${rowsProtecaoCA}
                         </tbody>
                     </table>
                     <div class="table-caption">Tabela 5 – Descrição dos dispositivos de proteção CA.</div>
 
-                    <p>Todas as proteções estão detalhadas também no Diagrama Unifilar anexado no tópico 4 (ANEXOS). O ponto de conexão do sistema fotovoltaico será feito no quadro de distribuição <u>interno, sendo este</u> localizado dentro da edificação, não havendo modificação do ponto de conexão (padrão de entrada) da unidade consumidora. O fornecimento e medição de energia são feitos através de padrão de entrada monofásica, em 220 V.</p>
+                    <p>Todas as proteções estão detalhadas também no Diagrama Unifilar anexado no tópico 4 (ANEXOS). O ponto de conexão do sistema fotovoltaico será feito no quadro de distribuição <u>interno, sendo este</u> localizado dentro da edificação, não havendo modificação do ponto de conexão (padrão de entrada) da unidade consumidora. O fornecimento e medição de energia são feitos através de padrão de entrada ${(d.tipoConexao || 'monofásica').toLowerCase()}, em ${d.tensaoAtendimento || '220'} V.</p>
 
                     <h3>3.6. Aterramento:</h3>
                     <p>O aterramento de módulos, estruturas metálicas, inversores, quadros CC e CA será feito com condutores de cobre com um diâmetro mínimo de 4mm e interligado ao sistema de aterramento da residência, promovendo a equipotencialização global da instalação. Caso a residência não possua aterramento adequado, o mesmo será feito</p>
@@ -553,36 +698,26 @@ function gerarMemorialDescritivo(data) {
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td>STRING 1</td>
-                                <td>CC 1,8 kV</td>
-                                <td>${d.moduloIsc || '17,50'}</td>
-                                <td>${vocTotalString}</td>
-                                <td>Cu-Sn, HEPR+XLPE, UV, 120º, 0,6/1,8 kVCC</td>
-                                <td>${d.caboCCPos || '4,0'}</td>
-                                <td>32,0</td>
-                                <td>${d.comprCC || '25,0'}</td>
-                                <td>${d.quedaCC || '0,76'}</td>
-                            </tr>
+                            ${rowsStringsCC}
                             <tr>
                                 <td>FASE - QCA</td>
-                                <td>CA 220 V</td>
+                                <td>CA ${tensaoCircuitoCA} V</td>
                                 <td>${d.inversorINominal || '25'}</td>
-                                <td>220</td>
+                                <td>${tensaoCircuitoCA}</td>
                                 <td>Cabo Cu, PVC, 70º, 750V</td>
                                 <td>${d.caboCAFase || '4.0'}</td>
-                                <td>32</td>
-                                <td>19,0</td>
+                                <td>${capCondCA}</td>
+                                <td>${d.comprCA || '19,0'}</td>
                                 <td>${d.quedaCA || '1,12'}</td>
                             </tr>
                             <tr>
                                 <td>QCA-QGBT</td>
-                                <td>CA 220 V</td>
+                                <td>CA ${tensaoCircuitoCA} V</td>
                                 <td>${d.inversorINominal || '25'}</td>
-                                <td>220</td>
+                                <td>${tensaoCircuitoCA}</td>
                                 <td>Cabo Cu, PVC, 70º, 750V</td>
                                 <td>${d.caboCAFase || '4.0'}</td>
-                                <td>32</td>
+                                <td>${capCondCA}</td>
                                 <td>7,0</td>
                                 <td>${d.quedaCA || '1,12'}</td>
                             </tr>
@@ -599,8 +734,6 @@ function gerarMemorialDescritivo(data) {
                         <li>− Letras: cor preta, tinta eletrostática em pó;</li>
                         <li>− Na chapa deverá ser aplicada uma demão de fundo anti-corrosivo de espessura mínima de 30 μm (frente e fundo).</li>
                     </ul>
-
-                    ${d.imgPlacaSinalizacao ? renderMemorialImage('imgPlacaSinalizacao', d.imgPlacaSinalizacao, 'Figura 05: Foto da Placa de Sinalização', 200, '🪧') : gerarPlacaSinalizacaoSVG()}
                 </div>
                 ${getFooterHtml(10)}
             </div>
@@ -611,10 +744,10 @@ function gerarMemorialDescritivo(data) {
                 <div class="memorial-body">
                     <div class="figure-caption" style="margin-top:10px;">Figura 5 – Modelo da placa de sinalização de geração própria.</div>
 
-                    ${renderMemorialImage('imgPlacaSinalizacao', d.imgPlacaSinalizacao, 'Modelo da placa de sinalização de geração própria', 240, '🪧')}
-                    <div class="figure-caption">Figura 6 – Desenho 03: Padrão de medição de baixa tensão.</div>
+                    ${renderMemorialImage('imgPlacaSinalizacao', d.imgPlacaSinalizacao, 'Modelo da placa de sinalização de geração própria', 200, '🪧', gerarPlacaSinalizacaoSVG())}
+                    <div class="figure-caption" style="margin-top:10px;">Figura 6 – Desenho 03: Padrão de medição de baixa tensão.</div>
 
-                    ${renderMemorialImage('imgPadraoMedicao', d.imgPadraoMedicao, 'Padrão de Medição de Baixa Tensão', 240, '📐')}
+                    ${renderMemorialImage('imgPadraoMedicao', d.imgPadraoMedicao, 'Padrão de Medição de Baixa Tensão', 240, '📐', gerarPadraoMedicaoSVG())}
                 </div>
                 ${getFooterHtml(11)}
             </div>

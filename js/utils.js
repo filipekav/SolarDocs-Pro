@@ -253,3 +253,37 @@ function getGeracaoMensal(data) {
         { mes: 'Dezembro', valor: data.gerDez || 0 }
     ];
 }
+
+/**
+ * Retorna a capacidade de condução de corrente (A) segundo a NBR 5410
+ * para condutores de cobre com isolação de PVC ou XLPE/EPR em eletroduto sobre parede
+ */
+function getCapacidadeConducaoNBR5410(bitolaStr) {
+    if (!bitolaStr) return '32,0';
+    const num = parseFloat(String(bitolaStr).replace(',', '.').replace(/[^0-9.]/g, '')) || 4.0;
+    const mapa = {
+        1.5: 17.5,
+        2.5: 24,
+        4.0: 32,
+        6.0: 41,
+        10.0: 57,
+        16.0: 76,
+        25.0: 101,
+        35.0: 125,
+        50.0: 151,
+        70.0: 192,
+        95.0: 232,
+        120.0: 269
+    };
+    if (mapa[num] !== undefined) {
+        return Number.isInteger(mapa[num]) ? `${mapa[num]},0` : String(mapa[num]).replace('.', ',');
+    }
+    const keys = Object.keys(mapa).map(Number).sort((a, b) => a - b);
+    for (let i = 0; i < keys.length; i++) {
+        if (num <= keys[i]) {
+            const v = mapa[keys[i]];
+            return Number.isInteger(v) ? `${v},0` : String(v).replace('.', ',');
+        }
+    }
+    return '125,0';
+}

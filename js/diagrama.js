@@ -259,7 +259,7 @@ function gerarPrancha1(d) {
 
     const disjSVG = `
         <rect x="${disjX}" y="${caY - 12}" width="38" height="24" fill="#fff" stroke="#333" stroke-width="1.5"/>
-        <text x="${disjX + 19}" y="${caY + 4}" text-anchor="middle" font-size="9" font-family="Arial" font-weight="bold" fill="#000">C ${d.disjuntorCA || '32'}A</text>
+        <text x="${disjX + 19}" y="${caY + 4}" text-anchor="middle" font-size="9" font-family="Arial" font-weight="bold" fill="#000">${(d.curvaDisjuntorCA || 'C').toUpperCase()} ${d.disjuntorCA || '32'} A</text>
     `;
 
     const dpsX = 620;
@@ -298,7 +298,7 @@ function gerarPrancha1(d) {
 
     const disjQgbSVG = `
         <rect x="${disjQgbX}" y="${caY - 12}" width="30" height="24" fill="#fff" stroke="#333" stroke-width="1.5"/>
-        <text x="${disjQgbX + 15}" y="${caY + 4}" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">C ${d.disjuntorQGBT || '40'}A</text>
+        <text x="${disjQgbX + 15}" y="${caY + 4}" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">${(d.curvaDisjuntorEntrada || 'C').toUpperCase()} ${d.disjuntorQGBT || d.disjuntorEntrada || '40'} A</text>
         <line x1="${disjQgbX + 15}" y1="${caY + 12}" x2="${disjQgbX + 15}" y2="${caY + 36}" stroke="#333" stroke-width="1.2"/>
         <polygon points="${disjQgbX + 11},${caY + 31} ${disjQgbX + 15},${caY + 38} ${disjQgbX + 19},${caY + 31}" fill="#333"/>
         <text x="${disjQgbX + 15}" y="${caY + 50}" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">Cargas</text>
@@ -342,6 +342,9 @@ function gerarPrancha1(d) {
     const infoW = 470;
     const infoH = 200;
 
+    const tensaoGeracaoRaw = (d.inversorVSaida || d.tensaoGeracao || d.tensaoAtendimento || '220').toString().trim();
+    const tensaoGeracaoFormatada = tensaoGeracaoRaw.toUpperCase().endsWith('V') ? tensaoGeracaoRaw : `${tensaoGeracaoRaw} V`;
+
     const dadosUC = `
         <rect x="${infoX}" y="${infoY}" width="${infoW}" height="${infoH}" fill="#fff" stroke="#333" stroke-width="1.2" rx="2"/>
         <path d="M ${infoX} ${infoY+24} L ${infoX+infoW} ${infoY+24}" stroke="#eee" stroke-width="1"/>
@@ -356,7 +359,7 @@ function gerarPrancha1(d) {
 
         <text x="${infoX + 10}" y="${infoY + 156}" font-size="11" font-family="Arial" font-weight="bold" fill="#0057b7">Informações Gerais sobre a Geração</text>
         <text x="${infoX + 10}" y="${infoY + 173}" font-size="10" font-family="Arial" fill="#000">01 - Fonte: ${d.tipoFonte || ''} | 02 - Potência Nominal Total: <tspan font-weight="bold">${potTotalUsinaKw} kW</tspan></text>
-        <text x="${infoX + 10}" y="${infoY + 190}" font-size="10" font-family="Arial" fill="#000">03 - Tensão Nominal Geração: ${d.tensaoGeracao || ''} V | 04 - Acesso Pretendido: ${d.tipoAcesso || ''}</text>
+        <text x="${infoX + 10}" y="${infoY + 190}" font-size="10" font-family="Arial" fill="#000">03 - Tensão Nominal Geração: ${tensaoGeracaoFormatada} | 04 - Acesso Pretendido: ${d.tipoAcesso || ''}</text>
     `;
 
     const info2X = 50;
@@ -822,7 +825,7 @@ function gerarPrancha6(d) {
                     <circle cx="20" cy="110" r="5" fill="#fff" stroke="#333" stroke-width="1"/>
                     <rect x="12" y="55" width="16" height="20" fill="#eee" stroke="#333" stroke-width="1"/>
                     <line x1="16" y1="65" x2="24" y2="65" stroke="#d32f2f" stroke-width="2"/>
-                    <text x="20" y="95" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">C ${disjA} A</text>
+                    <text x="20" y="95" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">${(d.curvaDisjuntorCA || 'C').toUpperCase()} ${disjA} A</text>
 
                     <!-- Pólo 2 Disjuntor -->
                     <rect x="42" y="0" width="40" height="130" fill="#ffffff" stroke="#222" stroke-width="1.5"/>
@@ -830,7 +833,7 @@ function gerarPrancha6(d) {
                     <circle cx="62" cy="110" r="5" fill="#fff" stroke="#333" stroke-width="1"/>
                     <rect x="54" y="55" width="16" height="20" fill="#eee" stroke="#333" stroke-width="1"/>
                     <line x1="58" y1="65" x2="66" y2="65" stroke="#d32f2f" stroke-width="2"/>
-                    <text x="62" y="95" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">C ${disjA} A</text>
+                    <text x="62" y="95" text-anchor="middle" font-size="8.5" font-family="Arial" font-weight="bold" fill="#000">${(d.curvaDisjuntorCA || 'C').toUpperCase()} ${disjA} A</text>
                 </g>
 
                 <!-- MÓDULOS DPS CA (2 UNIDADES NO TRILHO) -->
