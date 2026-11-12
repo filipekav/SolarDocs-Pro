@@ -1000,8 +1000,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeDocType === 'memorial') {
             pagesToRender = Array.from(previewContainer.querySelectorAll('.doc-page.memorial-page'));
         } else if (activeDocType === 'formulario') {
-            const formPage = previewContainer.querySelector('.doc-page.form-ugd-page');
-            if (formPage) pagesToRender = [formPage];
+            pagesToRender = Array.from(previewContainer.querySelectorAll('.doc-page.form-ugd-page'));
         } else {
             pagesToRender = Array.from(previewContainer.querySelectorAll('.diagrama-container'));
         }
